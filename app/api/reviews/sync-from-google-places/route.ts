@@ -81,7 +81,17 @@ export async function POST(request: Request) {
     }
 
     // Transform Google reviews to our format
-    const reviewsToInsert = placeData.reviews.map((review: any) => ({
+    const reviewsToInsert: Array<{
+      business_id: string;
+      platform: string;
+      external_id: string;
+      author_name: string;
+      author_photo_url: string | null;
+      rating: number;
+      review_text: string | null;
+      review_date: string;
+      status: string;
+    }> = placeData.reviews.map((review: any) => ({
       business_id:   businessId,
       platform:      "google",
       external_id:   review.name || `google_${review.publishTime}`,
