@@ -20,11 +20,8 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
-// Initialise Gemini once — reused across requests in the same worker
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
 // gemini-1.5-flash works on the free tier — upgrade to gemini-2.5-pro-preview once billing is enabled
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 function buildPrompt(
   businessName: string,
@@ -35,12 +32,12 @@ function buildPrompt(
 ): string {
   const toneGuide: Record<string, string> = {
     professional: "formal, polished, and professional",
-    friendly:     "warm, approachable, and conversational",
-    casual:       "relaxed, informal, and personable",
+    friendly: "warm, approachable, and conversational",
+    casual: "relaxed, informal, and personable",
   };
 
   const toneDescription = toneGuide[tone] ?? toneGuide.professional;
-  const businessContext  = businessType ? `${businessName} (${businessType})` : businessName;
+  const businessContext = businessType ? `${businessName} (${businessType})` : businessName;
 
   // Tailor instructions based on star rating
   let sentimentGuide: string;
@@ -125,9 +122,15 @@ export async function POST(request: Request) {
     );
 
     // Call Gemini
-    const model  = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is missing from environment variables");
+      return NextResponse.json({ error: "Gemini API key is not configured" }, { status: 500 });
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
     const result = await model.generateContent(prompt);
-    const draft  = result.response.text().trim();
+    const draft = result.response.text().trim();
 
     if (!draft) {
       return NextResponse.json({ error: "Gemini returned an empty response" }, { status: 500 });
