@@ -76,7 +76,10 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { responseMimeType: "application/json" },
+    });
 
     const prompt = `Analyze these customer reviews and extract key topics, themes, and insights.
 
@@ -125,7 +128,9 @@ Example format:
     // Parse JSON response
     let analysisData;
     try {
-      analysisData = JSON.parse(responseText);
+      // Remove markdown code blocks if the model wrapped the JSON
+      const cleanedText = responseText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+      analysisData = JSON.parse(cleanedText);
     } catch (parseError) {
       console.error("Failed to parse Gemini response:", responseText);
       return NextResponse.json(
