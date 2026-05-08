@@ -1,0 +1,204 @@
+@import "tailwindcss";
+
+/* ─── Global base ─────────────────────────────────────────────────────────── */
+body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ─── Animated gradient heading text ─────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 40%, #60a5fa 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ─── Floating orb blobs in hero background ──────────────────────────────── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.orb-1 {
+  width: 500px;
+  height: 500px;
+  background: #4f46e5;
+  top: -100px;
+  left: -150px;
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 400px;
+  height: 400px;
+  background: #7c3aed;
+  top: 50px;
+  right: -100px;
+  animation: float-slow 10s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+  width: 300px;
+  height: 300px;
+  background: #2563eb;
+  bottom: -50px;
+  left: 40%;
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-30px) scale(1.05); }
+}
+
+/* ─── Subtle dot grid background ─────────────────────────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(circle, #334155 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ─── Primary button shimmer effect ──────────────────────────────────────── */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  transition: none;
+}
+
+.btn-shimmer:hover::after {
+  animation: shimmer-slide 0.6s ease forwards;
+}
+
+@keyframes shimmer-slide {
+  0%   { left: -100%; }
+  100% { left: 150%; }
+}
+
+/* ─── Glowing border card on hover ───────────────────────────────────────── */
+.card-glow {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card-glow:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5) !important;
+}
+
+/* Negative review card — red glow on hover, overrides the indigo default */
+.card-glow-negative {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  background: rgba(127, 29, 29, 0.08);   /* very light red tint */
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+.card-glow-negative:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 24px rgba(220, 38, 38, 0.18);
+  border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+/* ─── Pricing card hover ─────────────────────────────────────────────────── */
+.pricing-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.2);
+}
+
+/* ─── Fade-in-up entrance animation ──────────────────────────────────────── */
+.fade-in-up {
+  animation: fade-in-up 0.7s ease both;
+}
+
+.fade-in-up-delay-1 { animation-delay: 0.1s; }
+.fade-in-up-delay-2 { animation-delay: 0.2s; }
+.fade-in-up-delay-3 { animation-delay: 0.3s; }
+
+@keyframes fade-in-up {
+  0%   { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Step number glow pulse ─────────────────────────────────────────────── */
+.step-number {
+  animation: step-pulse 3s ease-in-out infinite;
+}
+
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50%       { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+}
+
+/* ─── Stat card hover ────────────────────────────────────────────────────── */
+.stat-card {
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.stat-card:hover {
+  background: rgba(99, 102, 241, 0.12) !important;
+  transform: translateY(-3px);
+}
+
+/* ─── Glowing divider ────────────────────────────────────────────────────── */
+.glow-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #4f46e5, #7c3aed, transparent);
+  opacity: 0.5;
+}
+
+/* ─── Navbar blur ─────────────────────────────────────────────────────────── */
+.navbar-blur {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(15, 23, 42, 0.8);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+/* ─── Testimonial card ───────────────────────────────────────────────────── */
+.testimonial-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.testimonial-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.15);
+}
+
+/* ─── CTA banner gradient ────────────────────────────────────────────────── */
+.cta-gradient {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
