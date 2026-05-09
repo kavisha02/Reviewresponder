@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface NotificationSettings {
   negativeAlerts: boolean;
@@ -27,6 +27,32 @@ export default function NotificationSettingsClient({
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load saved settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch(`/api/notifications/get-settings?businessId=${businessId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSettings({
+            negativeAlerts: data.negative_alerts_enabled ?? true,
+            weeklyDigest: data.weekly_digest_enabled ?? true,
+            digestDay: data.digest_day ?? "monday",
+            digestTime: data.digest_time ?? "09:00",
+            email: data.notification_email ?? userEmail,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [businessId, userEmail]);
 
   const handleToggle = (key: keyof NotificationSettings) => {
     setSettings((prev) => ({
@@ -69,6 +95,14 @@ export default function NotificationSettingsClient({
       setLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-slate-400">Loading settings...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
