@@ -352,32 +352,63 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               </div>
             </div>
 
-            {/* ── 5 + 6. Sentiment + Language — side by side ── */}
+            {/* ── 5 + 6. Response Quality + Language — side by side ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* Sentiment */}
+              {/* Response Quality & Trends */}
               <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
                 <h2 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wide">
-                  Sentiment Breakdown
+                  Response Quality & Trends
                 </h2>
-                <div className="space-y-3">
-                  <HBar label="Positive (4–5★)" count={sentPositive} total={total} colorClass="bg-emerald-500" />
-                  <HBar label="Neutral (3★)"    count={sentNeutral}  total={total} colorClass="bg-yellow-400" />
-                  <HBar label="Negative (1–2★)" count={sentNegative} total={total} colorClass="bg-red-500" />
-                </div>
-
-                {/* Donut-style summary */}
-                <div className="mt-5 flex gap-3">
-                  {[
-                    { label: "Positive", count: sentPositive, bg: "bg-emerald-900/50", text: "text-emerald-400" },
-                    { label: "Neutral",  count: sentNeutral,  bg: "bg-yellow-900/30",  text: "text-yellow-400" },
-                    { label: "Negative", count: sentNegative, bg: "bg-red-900/30",     text: "text-red-400"    },
-                  ].map((s) => (
-                    <div key={s.label} className={`flex-1 ${s.bg} rounded-lg p-3 text-center`}>
-                      <div className={`text-xl font-bold ${s.text}`}>{s.count}</div>
-                      <div className="text-slate-400 text-xs mt-0.5">{s.label}</div>
+                <div className="space-y-4">
+                  {/* Response time indicator */}
+                  <div className="bg-slate-700/30 rounded-lg p-3">
+                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Response Coverage</div>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <div className="bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-700"
+                            style={{ width: `${responseRate}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold text-indigo-400">{responseRate}%</div>
                     </div>
-                  ))}
+                    <p className="text-xs text-slate-500 mt-2">{responded} of {total} reviews have responses</p>
+                  </div>
+
+                  {/* Negative review handling */}
+                  <div className="bg-slate-700/30 rounded-lg p-3">
+                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Negative Review Handling</div>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <div className="bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              negRespRate >= 75 ? "bg-emerald-500" : negRespRate >= 50 ? "bg-yellow-500" : "bg-red-500"
+                            }`}
+                            style={{ width: `${negRespRate}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className={`text-sm font-semibold ${
+                        negRespRate >= 75 ? "text-emerald-400" : negRespRate >= 50 ? "text-yellow-400" : "text-red-400"
+                      }`}>{negRespRate}%</div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">{negResponded} of {negReviews.length} negative reviews addressed</p>
+                  </div>
+
+                  {/* Rating trend */}
+                  <div className="bg-slate-700/30 rounded-lg p-3">
+                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Average Rating</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold text-yellow-400">{avgRating}★</div>
+                      <div className="text-xs text-slate-500">
+                        {avgRating >= 4 ? "Excellent" : avgRating >= 3 ? "Good" : "Needs Improvement"}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
