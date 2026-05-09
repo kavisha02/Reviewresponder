@@ -85,7 +85,7 @@ export default function SetupPage() {
   if (checkingExisting) return null; // brief loading before showing page
 
   return (
-    <main className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <main className="h-full flex items-center justify-center px-4 py-8">
       <div className="orb orb-1 opacity-10" aria-hidden="true" />
 
       <div className="relative z-10 w-full max-w-lg">
@@ -97,15 +97,7 @@ export default function SetupPage() {
               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                 RR
               </div>
-              <span className="font-semibold text-lg">ReviewResponder</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/home"
-                className="text-slate-400 hover:text-white text-sm transition-colors border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded-lg"
-              >
-                Home
-              </Link>
+              <span className="font-semibold text-lg text-white">ReviewResponder</span>
             </div>
           </div>
 

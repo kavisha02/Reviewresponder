@@ -13,12 +13,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Business, Review } from "@/lib/types";
-import SignOutButton from "@/components/SignOutButton";
-import LocationSwitcher from "@/components/LocationSwitcher";
 import ReviewCard from "@/components/ReviewCard";
 import ReviewSortDropdown from "@/components/ReviewSortDropdown";
 import DashboardClient from "@/components/DashboardClient";
-import Link from "next/link";
 
 interface PageProps {
   // searchParams is a Promise in Next.js 15+
@@ -80,36 +77,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const needsAttention = allReviews.filter((r) => r.status === "new" && r.rating <= 2).length;
 
   return (
-    <main className="min-h-screen bg-slate-900 text-slate-100">
-
-      {/* ── Navbar ── */}
-      <nav className="navbar-blur sticky top-0 z-50 w-full">
-        <div className="flex items-center justify-between px-6 py-3 max-w-6xl mx-auto gap-4">
-
-          {/* Left: logo + location switcher */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/home"
-              className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0 hover:opacity-80 transition-opacity"
-            >
-              RR
-            </Link>
-            {/* Location switcher */}
-            <LocationSwitcher businesses={businesses} currentId={selectedId} showAll={true} />
-          </div>
-
-          {/* Right: home + sign out */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/home"
-              className="text-sm text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded-lg transition-all duration-200 hidden sm:block"
-            >
-              Home
-            </Link>
-            <SignOutButton />
-          </div>
-        </div>
-      </nav>
+    <main className="text-slate-100">
 
       <div className="max-w-6xl mx-auto px-6 py-8">
 

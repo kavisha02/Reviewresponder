@@ -9,8 +9,6 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
-import SignOutButton from "@/components/SignOutButton";
 import NotificationSettingsClient from "@/components/NotificationSettingsClient";
 
 interface PageProps {
@@ -40,31 +38,7 @@ export default async function NotificationSettingsPage({ searchParams }: PagePro
   const business = businesses.find((b) => b.id === selectedId) ?? businesses[0];
 
   return (
-    <main className="min-h-screen bg-slate-900 text-slate-100">
-      {/* Navbar */}
-      <nav className="navbar-blur sticky top-0 z-50 w-full">
-        <div className="flex items-center justify-between px-6 py-3 max-w-6xl mx-auto gap-4">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/home"
-              className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0 hover:opacity-80 transition-opacity"
-            >
-              RR
-            </Link>
-            <h1 className="text-lg font-semibold">Notification Settings</h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/home"
-              className="text-sm text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded-lg transition-all duration-200 hidden sm:block"
-            >
-              Home
-            </Link>
-            <SignOutButton />
-          </div>
-        </div>
-      </nav>
+    <main className="text-slate-100">
 
       <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="mb-8">
