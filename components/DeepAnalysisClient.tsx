@@ -294,9 +294,8 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
                 <div className="flex items-start justify-between mb-3">
                   <h4 className="text-white font-semibold text-base">{topic.topic}</h4>
                   <span
-                    className={`text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r ${
-                      sentimentColors[topic.sentiment]
-                    } text-white`}
+                    className={`text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r ${sentimentColors[topic.sentiment]
+                      } text-white`}
                   >
                     {topic.sentiment.charAt(0).toUpperCase() + topic.sentiment.slice(1)}
                   </span>
@@ -355,7 +354,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
             {/* Sentiment Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Positive */}
-              <div className="bg-gradient-to-br from-emerald-950/40 to-emerald-900/20 border border-emerald-800/40 rounded-xl p-6 backdrop-blur-sm">
+              {/* <div className="bg-gradient-to-br from-emerald-950/40 to-emerald-900/20 border border-emerald-800/40 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-emerald-300">Positive</h3>
                   <span className="text-3xl">😊</span>
@@ -372,10 +371,10 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
                     />
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Negative */}
-              <div className="bg-gradient-to-br from-red-950/40 to-red-900/20 border border-red-800/40 rounded-xl p-6 backdrop-blur-sm">
+              {/* <div className="bg-gradient-to-br from-red-950/40 to-red-900/20 border border-red-800/40 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-red-300">Negative</h3>
                   <span className="text-3xl">😞</span>
@@ -392,10 +391,10 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
                     />
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Mixed */}
-              <div className="bg-gradient-to-br from-yellow-950/40 to-yellow-900/20 border border-yellow-800/40 rounded-xl p-6 backdrop-blur-sm">
+              {/* <div className="bg-gradient-to-br from-yellow-950/40 to-yellow-900/20 border border-yellow-800/40 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-yellow-300">Mixed</h3>
                   <span className="text-3xl">😐</span>
@@ -412,7 +411,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
                     />
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Distribution Chart */}
