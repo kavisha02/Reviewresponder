@@ -115,28 +115,7 @@ const SUPPORT = [
 
 export default function HelpPage() {
   return (
-    <main className="min-h-screen bg-slate-900 text-slate-100">
-
-      {/* ── Navbar ── */}
-      <nav className="navbar-blur sticky top-0 z-50 w-full">
-        <div className="flex items-center justify-between px-6 py-3 max-w-4xl mx-auto">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/home"
-              className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white font-bold text-sm hover:opacity-80 transition-opacity"
-            >
-              RR
-            </Link>
-            <span className="font-semibold text-white">ReviewResponder</span>
-          </div>
-          <Link
-            href="/home"
-            className="text-sm text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-3 py-1.5 rounded-lg transition-all duration-200"
-          >
-            ← Back to Home
-          </Link>
-        </div>
-      </nav>
+    <main className="text-slate-100">
 
       <div className="max-w-4xl mx-auto px-6 py-12">
 
