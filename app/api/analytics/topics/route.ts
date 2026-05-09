@@ -7,8 +7,14 @@
  * - Frequency of mentions
  * - Actionable insights
  *
- * Request body: { businessId: string }
- * Response:     { topics: [...], insights: [...] }
+ * Request body: { businessId: string, analyzedReviewIds?: string[] }
+ * Response:     { topics: [...], insights: [...], newTopics: [...], newInsights: [...] }
+ *
+ * If analyzedReviewIds is provided, only analyzes new reviews and returns:
+ * - newTopics: topics from new reviews only
+ * - newInsights: insights from new reviews only
+ * - topics: merged with existing (for display)
+ * - insights: merged with existing (for display)
  */
 
 import { NextResponse } from "next/server";
@@ -27,7 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { businessId } = await request.json();
+    const { businessId, analyzedReviewIds = [] } = await request.json();
 
     if (!businessId) {
       return NextResponse.json(
@@ -49,21 +55,39 @@ export async function POST(request: Request) {
     }
 
     // Fetch all reviews for this business
-    const { data: reviews } = await supabase
+    const { data: allReviews } = await supabase
       .from("reviews")
-      .select("review_text, rating")
+      .select("id, review_text, rating")
       .eq("business_id", businessId)
       .not("review_text", "is", null);
 
-    if (!reviews || reviews.length === 0) {
+    if (!allReviews || allReviews.length === 0) {
       return NextResponse.json(
-        { topics: [], insights: [], message: "No reviews to analyze" },
+        { topics: [], insights: [], newTopics: [], newInsights: [], message: "No reviews to analyze" },
         { status: 200 }
       );
     }
 
-    // Prepare reviews for Gemini
-    const reviewsText = reviews
+    // Determine which reviews to analyze
+    const newReviews = analyzedReviewIds.length > 0
+      ? allReviews.filter(r => !analyzedReviewIds.includes(r.id))
+      : allReviews;
+
+    // If no new reviews, return empty new analysis
+    if (newReviews.length === 0) {
+      return NextResponse.json({
+        success: true,
+        reviewsAnalyzed: allReviews.length,
+        topics: [],
+        insights: [],
+        newTopics: [],
+        newInsights: [],
+        summary: "No new reviews to analyze",
+      });
+    }
+
+    // Prepare only new reviews for Gemini
+    const reviewsText = newReviews
       .map((r) => `Rating: ${r.rating}★\nReview: ${r.review_text}`)
       .join("\n---\n");
 
@@ -76,10 +100,7 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: { responseMimeType: "application/json" },
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Analyze these customer reviews and extract key topics, themes, and insights.
 
@@ -141,16 +162,20 @@ Example format:
 
     return NextResponse.json({
       success: true,
-      reviewsAnalyzed: reviews.length,
+      reviewsAnalyzed: allReviews.length,
+      newReviewsAnalyzed: newReviews.length,
       topics: analysisData.topics || [],
       insights: analysisData.insights || [],
+      newTopics: analysisData.topics || [],
+      newInsights: analysisData.insights || [],
       summary: analysisData.summary || "",
     });
 
   } catch (err) {
     console.error("Topic analysis error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -6,8 +6,8 @@
  * - Actionable insights
  * - Overall summary
  *
- * Caches results in localStorage to avoid re-analyzing on every page load.
- * Only re-analyzes when the review count changes.
+ * Caches results in localStorage and only analyzes new reviews.
+ * When new reviews are added, only those are sent to Gemini and merged with existing results.
  */
 
 "use client";
@@ -25,6 +25,14 @@ interface Insight {
   insight: string;
   impact: string;
   recommendation: string;
+}
+
+interface CachedData {
+  topics: Topic[];
+  insights: Insight[];
+  summary: string;
+  reviewsAnalyzed: number;
+  analyzedReviewIds: string[];
 }
 
 interface Props {
@@ -45,29 +53,42 @@ export default function TopicAnalysis({ businessId }: Props) {
     async function fetchAnalysis() {
       const cacheKey = `topic-analysis-${businessId}`;
       const cached = localStorage.getItem(cacheKey);
+      let cachedData: CachedData | null = null;
+
+      if (cached) {
+        try {
+          cachedData = JSON.parse(cached);
+        } catch (e) {
+          cachedData = null;
+        }
+      }
 
       try {
-        // First, fetch the current review count to check if we need to re-analyze
+        // Fetch current review count
         const countRes = await fetch(`/api/analytics/review-count?businessId=${businessId}`);
         const countData = await countRes.json();
         const currentReviewCount = countData.count || 0;
 
-        // Check if we have cached data and if the review count hasn't changed
-        if (cached) {
-          const cachedData = JSON.parse(cached);
-          if (cachedData.reviewsAnalyzed === currentReviewCount) {
-            // Use cached data
-            setData(cachedData);
-            setLoading(false);
-            return;
-          }
+        // If we have cache and review count matches, use cache
+        if (cachedData && cachedData.reviewsAnalyzed === currentReviewCount) {
+          setData({
+            topics: cachedData.topics,
+            insights: cachedData.insights,
+            summary: cachedData.summary,
+            reviewsAnalyzed: cachedData.reviewsAnalyzed,
+          });
+          setLoading(false);
+          return;
         }
 
-        // Reviews changed or no cache, fetch fresh analysis
+        // Reviews changed, fetch fresh analysis with list of already-analyzed review IDs
         const res = await fetch("/api/analytics/topics", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ businessId }),
+          body: JSON.stringify({
+            businessId,
+            analyzedReviewIds: cachedData?.analyzedReviewIds || [],
+          }),
         });
 
         const result = await res.json();
@@ -78,9 +99,49 @@ export default function TopicAnalysis({ businessId }: Props) {
           return;
         }
 
-        // Cache the result
-        localStorage.setItem(cacheKey, JSON.stringify(result));
-        setData(result);
+        // If we have cached data, merge new topics and insights
+        let mergedTopics = result.topics || [];
+        let mergedInsights = result.insights || [];
+        let mergedSummary = result.summary || "";
+
+        if (cachedData && result.newTopics && result.newTopics.length > 0) {
+          // Merge topics: combine existing with new, avoiding duplicates
+          const existingTopicNames = new Set(cachedData.topics.map(t => t.topic));
+          const newTopicsToAdd = result.newTopics.filter(
+            (t: Topic) => !existingTopicNames.has(t.topic)
+          );
+
+          mergedTopics = [...cachedData.topics, ...newTopicsToAdd];
+
+          // For insights, just append new ones (they're contextual)
+          mergedInsights = [...(cachedData.insights || []), ...(result.newInsights || [])];
+
+          // Update summary with new analysis
+          mergedSummary = result.summary || cachedData.summary;
+        }
+
+        // Get all review IDs for caching
+        const allReviewsRes = await fetch(`/api/analytics/review-ids?businessId=${businessId}`);
+        const allReviewsData = await allReviewsRes.json();
+        const allReviewIds = allReviewsData.ids || [];
+
+        // Cache the merged result
+        const cacheToStore: CachedData = {
+          topics: mergedTopics,
+          insights: mergedInsights,
+          summary: mergedSummary,
+          reviewsAnalyzed: currentReviewCount,
+          analyzedReviewIds: allReviewIds,
+        };
+
+        localStorage.setItem(cacheKey, JSON.stringify(cacheToStore));
+
+        setData({
+          topics: mergedTopics,
+          insights: mergedInsights,
+          summary: mergedSummary,
+          reviewsAnalyzed: currentReviewCount,
+        });
         setLoading(false);
       } catch (err) {
         setError("An error occurred while analyzing topics");
