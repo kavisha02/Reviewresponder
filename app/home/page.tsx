@@ -95,6 +95,17 @@ export default async function HomePage() {
       border:      "hover:border-emerald-700/60",
     },
     {
+      href:        hasBusinesses ? `/dashboard/analyse-deeply?business=${firstBizId}` : "/dashboard/setup",
+      icon:        "🔍",
+      iconBg:      "from-purple-500 to-pink-600",
+      title:       "Analyse Deeply",
+      description: "Deep insights with category analysis, sentiment breakdown, and featured top reviews.",
+      cta:         "Deep Analysis →",
+      badge:       null,
+      badgeColor:  "",
+      border:      "hover:border-purple-700/60",
+    },
+    {
       href:        "/dashboard/setup",
       icon:        "📍",
       iconBg:      "from-sky-500 to-blue-600",
