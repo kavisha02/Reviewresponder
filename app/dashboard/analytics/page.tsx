@@ -20,7 +20,6 @@ import { Business, Review } from "@/lib/types";
 import Link from "next/link";
 import SignOutButton from "@/components/SignOutButton";
 import LocationSwitcher from "@/components/LocationSwitcher";
-import TopicAnalysis from "@/components/TopicAnalysis";
 
 interface PageProps {
   searchParams: Promise<{ business?: string }>;
@@ -467,20 +466,6 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                 ))}
               </div>
             </div>
-
-            {/* ── AI Topic Analysis ── */}
-            <section className="mb-12">
-              <h2 className="text-xs font-semibold text-purple-400 uppercase tracking-widest mb-6">
-                🤖 AI Topic Analysis
-              </h2>
-              {isAll ? (
-                <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6 text-center text-slate-400 text-sm">
-                  Topic analysis is available for individual locations only. Select a specific location to see AI-powered insights.
-                </div>
-              ) : (
-                <TopicAnalysis businessId={selectedId} />
-              )}
-            </section>
 
           </div>
         )}
