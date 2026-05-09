@@ -135,7 +135,6 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const statusData = [
     { label: "Draft Ready",      key: "draft", count: all.filter((r) => r.status === "draft").length, color: "bg-blue-500" },
     { label: "Needs Response", key: "new",        count: all.filter((r) => r.status === "new").length,       color: "bg-yellow-400" },
-    { label: "Draft Ready",    key: "draft",      count: all.filter((r) => r.status === "draft").length,     color: "bg-indigo-400" },
     { label: "Ignored",        key: "ignored",    count: all.filter((r) => r.status === "ignored").length,   color: "bg-slate-500"  },
   ];
 
