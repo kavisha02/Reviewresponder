@@ -28,6 +28,8 @@ export default function NotificationSettingsClient({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testMessage, setTestMessage] = useState("");
 
   // Load saved settings on mount
   useEffect(() => {
@@ -66,6 +68,30 @@ export default function NotificationSettingsClient({
       ...prev,
       [key]: value,
     }));
+  };
+
+  const handleTestEmail = async () => {
+    setTestingEmail(true);
+    setTestMessage("");
+    try {
+      const response = await fetch("/api/notifications/send-daily-digest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Test email error response:", errorData);
+        throw new Error(errorData.error || "Failed to send test email");
+      }
+      setTestMessage("✓ Test email sent!");
+      setTimeout(() => setTestMessage(""), 5000);
+    } catch (error) {
+      setTestMessage("✗ Failed to send test email");
+      console.error("Test email error:", error);
+    } finally {
+      setTestingEmail(false);
+    }
   };
 
   const handleSave = async () => {
@@ -216,23 +242,45 @@ export default function NotificationSettingsClient({
       </div>
 
       {/* Save Button */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200"
-        >
-          {loading ? "Saving..." : "Save Settings"}
-        </button>
-        {message && (
-          <span
-            className={`text-sm font-medium ${
-              message.includes("✓") ? "text-emerald-400" : "text-red-400"
-            }`}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200"
           >
-            {message}
-          </span>
-        )}
+            {loading ? "Saving..." : "Save Settings"}
+          </button>
+          {message && (
+            <span
+              className={`text-sm font-medium ${
+                message.includes("✓") ? "text-emerald-400" : "text-red-400"
+              }`}
+            >
+              {message}
+            </span>
+          )}
+        </div>
+        
+        {/* Test Email Button */}
+        <div className="flex items-center gap-4 mt-2 pt-4 border-t border-slate-700/50">
+          <button
+            onClick={handleTestEmail}
+            disabled={testingEmail}
+            className="bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200"
+          >
+            {testingEmail ? "Sending..." : "Send Test Digest Email"}
+          </button>
+          {testMessage && (
+            <span
+              className={`text-sm font-medium ${
+                testMessage.includes("✓") ? "text-emerald-400" : "text-red-400"
+              }`}
+            >
+              {testMessage}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Info Box */}

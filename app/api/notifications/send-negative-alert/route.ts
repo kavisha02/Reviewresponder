@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
     // Send email via Resend
     const result = await resend.emails.send({
-      from: "ReviewResponder <alerts@reviewresponder.com>",
+      from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
       to: userData.email,
       subject: `🚨 Negative Review Alert: ${business.name}`,
       html: getNegativeReviewAlertHTML({

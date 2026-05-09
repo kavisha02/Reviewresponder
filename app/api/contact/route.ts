@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         from:    "ReviewResponder Support <onboarding@resend.dev>",
-        to:      "support@reviewresponder.com", // Change to your support email
+        to:      process.env.RESEND_CONTACT_EMAIL || "bhagyashah5122002@gmail.com", // Must match verified Resend email for testing
         replyTo: email,
         subject: `[Support] ${subject}`,
         html: `

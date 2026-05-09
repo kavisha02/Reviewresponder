@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
     // Send email via Resend
     const result = await resend.emails.send({
-      from: "ReviewResponder <digest@reviewresponder.com>",
+      from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
       to: userData.email,
       subject: `📊 Weekly Review Digest: ${business.name}`,
       html: getDailyDigestHTML({
