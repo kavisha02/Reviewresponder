@@ -136,6 +136,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // Send negative review alerts for new negative reviews
+    if (inserted && inserted.length > 0) {
+      const negativeReviews = inserted.filter((r: any) => r.rating <= 2);
+
+      for (const review of negativeReviews) {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send-negative-alert`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              businessId,
+              reviewId: review.id,
+            }),
+          });
+        } catch (alertError) {
+          console.error("Failed to send negative alert:", alertError);
+          // Don't fail the sync if alert fails
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       count: inserted?.length || 0,
