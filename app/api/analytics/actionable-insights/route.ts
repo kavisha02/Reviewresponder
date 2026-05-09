@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `Extract 3-4 actionable insights to solve customer problems from these reviews. Each insight should identify a problem, its impact, and a specific action.
 

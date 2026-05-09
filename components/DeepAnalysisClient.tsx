@@ -527,7 +527,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
                       <span className="text-slate-500 text-sm">({review.rating}★)</span>
                     </div>
                     <p className="text-slate-300 font-medium">{review.author_name}</p>
-                    <p className="text-slate-500 text-xs">
+                    <p className="text-slate-500 text-xs" suppressHydrationWarning>
                       {new Date(review.review_date).toLocaleDateString()}
                     </p>
                   </div>
