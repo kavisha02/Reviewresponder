@@ -111,7 +111,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     ? (all.reduce((s, r) => s + r.rating, 0) / total).toFixed(1)
     : "—";
 
-  const responded     = all.filter((r) => r.status === "published").length;
+  const responded     = all.filter((r) => r.status === "draft").length;
   const responseRate  = total > 0 ? Math.round((responded / total) * 100) : 0;
 
   const thirtyAgo     = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -133,7 +133,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   // ── 3. Status breakdown ─────────────────────────────────────────────────
   const statusData = [
-    { label: "Responded",      key: "published", count: all.filter((r) => r.status === "published").length, color: "bg-emerald-500" },
+    { label: "Draft Ready",      key: "draft", count: all.filter((r) => r.status === "draft").length, color: "bg-blue-500" },
     { label: "Needs Response", key: "new",        count: all.filter((r) => r.status === "new").length,       color: "bg-yellow-400" },
     { label: "Draft Ready",    key: "draft",      count: all.filter((r) => r.status === "draft").length,     color: "bg-indigo-400" },
     { label: "Ignored",        key: "ignored",    count: all.filter((r) => r.status === "ignored").length,   color: "bg-slate-500"  },
@@ -174,7 +174,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   // ── 7. Extra insights ───────────────────────────────────────────────────
   const negReviews    = all.filter((r) => r.rating <= 2);
-  const negResponded  = negReviews.filter((r) => r.status === "published").length;
+  const negResponded  = negReviews.filter((r) => r.status === "draft").length;
   const negRespRate   = negReviews.length > 0
     ? Math.round((negResponded / negReviews.length) * 100)
     : 0;

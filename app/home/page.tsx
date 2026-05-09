@@ -48,7 +48,7 @@ export default async function HomePage() {
       .from("reviews")
       .select("id", { count: "exact", head: true })
       .in("business_id", businessIds)
-      .eq("status", "published");
+      .eq("status", "draft");
 
     const { count: urgent } = await supabase
       .from("reviews")

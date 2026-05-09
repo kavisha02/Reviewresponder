@@ -161,9 +161,9 @@ export default function LandingPage() {
             },
             {
               step: "03",
-              icon: "✅",
-              title: "Approve & Publish",
-              body: "Review the draft, edit if needed, and publish to Google in one click — or set it to auto-publish.",
+              icon: "💾",
+              title: "Save & Review",
+              body: "Review the draft, edit if needed, and save it to your dashboard. Copy and paste to Google Business Profile manually.",
             },
           ].map((item) => (
             <div key={item.step} className="flex flex-col items-center text-center group cursor-default">
@@ -210,7 +210,7 @@ export default function LandingPage() {
               iconBg: "bg-indigo-950/60",
               iconGlow: "shadow-indigo-500/20",
               title: "AI Draft Responses",
-              body: "Every review gets a human-sounding draft in your tone — professional, friendly, or casual. Edit or publish in one click.",
+              body: "Every review gets a human-sounding draft in your tone — professional, friendly, or casual. Edit and save to your dashboard.",
             },
             {
               icon: "📈",
@@ -220,11 +220,11 @@ export default function LandingPage() {
               body: "Track average rating trends, response rate, and sentiment week-over-week. Understand exactly what customers are saying.",
             },
             {
-              icon: "⚡",
-              iconBg: "bg-yellow-950/60",
-              iconGlow: "shadow-yellow-500/20",
-              title: "Auto-Publish",
-              body: "Set it and forget it for positive reviews. Enable auto-publish and every 4-5 star review gets responded to automatically.",
+              icon: "📍",
+              iconBg: "bg-pink-950/60",
+              iconGlow: "shadow-pink-500/20",
+              title: "Multi-Location Support",
+              body: "Manage multiple business locations from one dashboard. Each location has its own reviews, drafts, and analytics.",
             },
             {
               icon: "🌐",
@@ -350,7 +350,7 @@ export default function LandingPage() {
                   <span className="text-emerald-400 font-bold">✓</span> {f}
                 </li>
               ))}
-              {["Auto-publish", "WhatsApp alerts"].map((f) => (
+              {["WhatsApp alerts"].map((f) => (
                 <li key={f} className="flex items-center gap-2 text-slate-600">
                   <span className="font-bold">✗</span> {f}
                 </li>
@@ -378,7 +378,6 @@ export default function LandingPage() {
                 "1 business location",
                 "Unlimited reviews",
                 "AI draft responses",
-                "Auto-publish positive reviews",
                 "Email + WhatsApp alerts",
               ].map((f) => (
                 <li key={f} className="flex items-center gap-2 text-slate-200">

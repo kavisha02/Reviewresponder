@@ -14,7 +14,7 @@ const FAQS = [
     items: [
       {
         q: "What is ReviewResponder?",
-        a: "ReviewResponder is an AI-powered platform that helps businesses monitor Google reviews and respond to them quickly. Instead of manually writing replies, the AI drafts a professional response in seconds — you review it, edit if needed, and publish.",
+        a: "ReviewResponder is an AI-powered platform that helps businesses monitor Google reviews and respond to them quickly. The AI drafts professional responses in seconds — you review, edit if needed, and save them to your dashboard.",
       },
       {
         q: "How do I add my business?",
@@ -34,12 +34,12 @@ const FAQS = [
         a: "When you click 'Generate AI Response' on a review, ReviewResponder sends the review text, star rating, and your business type to Google Gemini. The AI crafts a tone-appropriate reply — warm and grateful for positive reviews, empathetic and solution-oriented for negative ones.",
       },
       {
-        q: "Can I edit the AI draft before publishing?",
-        a: "Absolutely. Every AI draft shows an 'Edit' button. Click it to open an inline text editor where you can change any word, adjust the tone, or add personalised details. The publish button only sends whatever is in the editor.",
+        q: "Can I edit the AI draft?",
+        a: "Absolutely. Every AI draft shows an 'Edit' button. Click it to open an inline text editor where you can change any word, adjust the tone, or add personalised details. Your edits are saved to the draft.",
       },
       {
         q: "What if I don't like the draft — can I regenerate?",
-        a: "Yes. While a review is in 'Draft Ready' state, a 'Regenerate' button appears. Each regeneration produces a completely new response. You can regenerate as many times as you like before publishing.",
+        a: "Yes. While a review is in 'Draft Ready' state, a 'Regenerate' button appears. Each regeneration produces a completely new response. You can regenerate as many times as you like to find the perfect draft.",
       },
       {
         q: "Does the AI respond in Hindi or other languages?",
@@ -52,7 +52,7 @@ const FAQS = [
     items: [
       {
         q: "What do the review statuses mean?",
-        a: "'Needs Response' means the review has no reply yet. 'Draft Ready' means the AI has generated a response waiting for your approval. 'Responded' means a response has been published. 'Ignored' means you chose to skip the review.",
+        a: "'Needs Response' means the review has no reply yet. 'Draft Ready' means the AI has generated a response waiting for your review. 'Ignored' means you chose to skip the review.",
       },
       {
         q: "Why are some reviews highlighted in red?",
@@ -73,7 +73,7 @@ const FAQS = [
       },
       {
         q: "How is 'Response Rate' calculated?",
-        a: "Response Rate = (number of 'Responded' reviews ÷ total reviews) × 100. A higher rate signals to Google that you actively engage with customers, which can positively impact your local search ranking.",
+        a: "Response Rate = (number of 'Draft Ready' reviews ÷ total reviews) × 100. This shows what percentage of reviews you've drafted responses for.",
       },
     ],
   },
@@ -85,8 +85,8 @@ const FAQS = [
         a: "Yes. All data is stored in Supabase with Row Level Security (RLS) enabled — each user can only access their own businesses and reviews. Authentication is handled by Supabase Auth with encrypted sessions.",
       },
       {
-        q: "Does ReviewResponder post responses to Google automatically?",
-        a: "Not yet. The current version saves responses in your dashboard but does not post them to Google automatically. Google API publishing is planned for a future phase. Until then, you can copy the response and paste it manually in your Google Business Profile.",
+        q: "Can I post responses to Google?",
+        a: "The current version saves draft responses in your dashboard. You can copy the response and paste it manually in your Google Business Profile. Automatic posting to Google is planned for a future phase.",
       },
     ],
   },

@@ -2,16 +2,14 @@
  * ReviewCard — full interactive review card.
  *
  * States a card moves through:
- *   new  →  (click Generate)  →  draft  →  (click Publish)  →  published
+ *   new  →  (click Generate)  →  draft
  *
  * In "draft" state the owner can:
  *   - Read the AI draft
  *   - Click "Edit" to open an inline textarea and change any word
- *   - Click "Publish" to save and mark as responded
  *   - Click "Regenerate" to get a fresh AI draft
  *
- * In "published" state the card shows the final published response
- * in a green box — no further actions available.
+ * Draft responses are saved but not published to Google.
  */
 
 "use client";
@@ -22,14 +20,12 @@ import { Review } from "@/lib/types";
 const STATUS_STYLES: Record<string, string> = {
   new:       "bg-yellow-900/50 text-yellow-300 border-yellow-700/50",
   draft:     "bg-blue-900/50 text-blue-300 border-blue-700/50",
-  published: "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
   ignored:   "bg-slate-800 text-slate-400 border-slate-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   new:       "Needs Response",
   draft:     "Draft Ready",
-  published: "Responded",
   ignored:   "Ignored",
 };
 
@@ -69,14 +65,12 @@ export default function ReviewCard({ review }: { review: Review }) {
   // ── Local UI state ──────────────────────────────────────────────────────
   const [status,     setStatus]     = useState(review.status);
   const [draft,      setDraft]      = useState<string | null>(review.draft_response);
-  const [published,  setPublished]  = useState<string | null>(review.published_response);
 
   // Editing state — when true, draft becomes a textarea
   const [isEditing,  setIsEditing]  = useState(false);
   const [editedText, setEditedText] = useState(review.draft_response ?? "");
 
   const [generating, setGenerating] = useState(false);
-  const [publishing, setPublishing] = useState(false);
   const [error,      setError]      = useState("");
 
   const initials = review.author_name
@@ -108,61 +102,27 @@ export default function ReviewCard({ review }: { review: Review }) {
     setGenerating(false);
   }
 
-  // ── Publish ─────────────────────────────────────────────────────────────
-  async function handlePublish() {
-    const textToPublish = isEditing ? editedText.trim() : (draft ?? "");
-    if (!textToPublish) return;
-
-    setPublishing(true);
-    setError("");
-
-    const res  = await fetch("/api/reviews/publish-response", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ reviewId: review.id, responseText: textToPublish }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error ?? "Publish failed. Please try again.");
-      setPublishing(false);
-      return;
-    }
-
-    setPublished(textToPublish);
-    setStatus("published");
-    setIsEditing(false);
-    setPublishing(false);
-  }
-
   return (
     <div className={`relative border rounded-2xl overflow-hidden ${
-      status === "published"
-        ? "card-glow bg-slate-800/70 border-emerald-800/40"
-        : isNegative
-          ? "card-glow-negative border-red-700/40"
-          : "card-glow bg-slate-800/70 border-slate-700"
+      isNegative && status === "new"
+        ? "card-glow-negative border-red-700/40"
+        : "card-glow bg-slate-800/70 border-slate-700"
     }`}>
 
       {/* Left accent bar */}
-      {isNegative && status !== "published" && (
+      {isNegative && status === "new" && (
         <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500/70" />
       )}
-      {status === "published" && (
-        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-emerald-500/70" />
-      )}
 
-      <div className={isNegative && status !== "published" ? "pl-4 pr-5 py-5" : "p-5"}>
+      <div className={isNegative && status === "new" ? "pl-4 pr-5 py-5" : "p-5"}>
 
         {/* ── Top row ── */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 bg-gradient-to-br ${
-              status === "published"
-                ? "from-emerald-500 to-emerald-700"
-                : isNegative
-                  ? "from-red-500/80 to-red-700/80"
-                  : "from-indigo-500 to-violet-600"
+              isNegative && status === "new"
+                ? "from-red-500/80 to-red-700/80"
+                : "from-indigo-500 to-violet-600"
             }`}>
               {initials}
             </div>
@@ -183,7 +143,7 @@ export default function ReviewCard({ review }: { review: Review }) {
         </div>
 
         {/* ── Stars ── */}
-        <StarRating rating={review.rating} isNegative={isNegative && status !== "published"} />
+        <StarRating rating={review.rating} isNegative={isNegative && status === "new"} />
 
         {/* ── Review text ── */}
         <p className="text-slate-300 text-sm leading-relaxed mt-2 mb-4">
@@ -192,20 +152,7 @@ export default function ReviewCard({ review }: { review: Review }) {
           )}
         </p>
 
-        {/* ── PUBLISHED state: show the final response in green ── */}
-        {status === "published" && published && (
-          <div className="bg-emerald-950/30 border border-emerald-800/40 rounded-xl p-4 mb-2">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-emerald-400 text-xs font-semibold uppercase tracking-wide">
-                Your Response
-              </span>
-              <span className="text-emerald-600 text-xs">· Published</span>
-            </div>
-            <p className="text-slate-300 text-sm leading-relaxed">{published}</p>
-          </div>
-        )}
-
-        {/* ── DRAFT state: AI draft box with edit / publish controls ── */}
+        {/* ── DRAFT state: AI draft box with edit controls ── */}
         {status === "draft" && draft && (
           <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
@@ -256,7 +203,7 @@ export default function ReviewCard({ review }: { review: Review }) {
         )}
 
         {/* ── Action buttons ── */}
-        {status !== "published" && (
+        {status !== "ignored" && (
           <div className="flex gap-2 flex-wrap">
 
             {/* Generate — shown when no draft */}
@@ -281,25 +228,6 @@ export default function ReviewCard({ review }: { review: Review }) {
                     Generating…
                   </span>
                 ) : "Generate AI Response"}
-              </button>
-            )}
-
-            {/* Publish — shown when draft exists */}
-            {status === "draft" && (
-              <button
-                onClick={handlePublish}
-                disabled={publishing || (isEditing && !editedText.trim())}
-                className="text-xs px-3 py-1.5 rounded-lg border font-medium bg-emerald-700/30 hover:bg-emerald-700/50 text-emerald-300 border-emerald-700/50 hover:border-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {publishing ? (
-                  <span className="flex items-center gap-1.5">
-                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                    </svg>
-                    Publishing…
-                  </span>
-                ) : isEditing ? "Publish Edited Response" : "Publish Response"}
               </button>
             )}
 

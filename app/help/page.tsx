@@ -39,9 +39,9 @@ const GUIDES = [
   },
   {
     step: "05",
-    title: "Publish the Response",
-    description: "Click 'Publish Response' to save it as final. The card turns green and shows 'Responded'. In a future update, this will also post the reply directly to Google Business Profile.",
-    icon: "✅",
+    title: "Save Your Draft",
+    description: "Your draft is automatically saved. You can view all your drafts in the dashboard and copy them to paste into your Google Business Profile manually.",
+    icon: "💾",
     color: "from-emerald-500 to-teal-600",
   },
   {
@@ -216,8 +216,7 @@ export default function HelpPage() {
                 {[
                   ["Generate AI response",   "Review card (status: new)",     "Click 'Generate AI Response'"],
                   ["Regenerate draft",        "Review card (status: draft)",   "Click 'Regenerate'"],
-                  ["Edit before publishing", "Review card (status: draft)",   "Click 'Edit' → modify → 'Publish Edited Response'"],
-                  ["Publish as-is",          "Review card (status: draft)",   "Click 'Publish Response' (no edit needed)"],
+                  ["Edit draft",              "Review card (status: draft)",   "Click 'Edit' → modify text"],
                   ["Switch location",        "Any dashboard page",            "Click the location name in the top navbar"],
                   ["View analytics",         "Reviews dashboard",             "Click 'Analytics' button in the page header"],
                   ["Add new location",       "Home page or Reviews dashboard","Click 'Add Location'"],

@@ -139,7 +139,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
               <div>
                 <p className="text-slate-400 text-xs">Response Rate</p>
                 <p className="text-2xl font-bold text-emerald-400">
-                  {totalReviews > 0 ? Math.round((reviews.filter(r => r.status === "published").length / totalReviews) * 100) : 0}%
+                  {totalReviews > 0 ? Math.round((reviews.filter(r => r.status === "draft").length / totalReviews) * 100) : 0}%
                 </p>
               </div>
             </div>
