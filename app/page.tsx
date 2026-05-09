@@ -203,7 +203,7 @@ export default function LandingPage() {
               iconBg: "bg-red-950/60",
               iconGlow: "shadow-red-500/20",
               title: "Instant Negative Alerts",
-              body: "Get notified within 5 minutes when a 1 or 2-star review lands — via email and WhatsApp — before it damages your ranking.",
+              body: "Get notified within 5 minutes when a 1 or 2-star review lands — via email — before it damages your ranking.",
             },
             {
               icon: "🤖",
@@ -279,7 +279,7 @@ export default function LandingPage() {
               stars: 5,
             },
             {
-              quote: "The negative review alert is a lifesaver. I got pinged on WhatsApp within minutes and was able to respond and resolve the issue before it went viral.",
+              quote: "The negative review alert is a lifesaver really. I got pinged on mail within minutes and was able to respond and resolve the issue before it went viral.",
               name: "Marcus Johnson",
               role: "Manager, QuickFix Auto · Chicago",
               stars: 5,
@@ -378,7 +378,7 @@ export default function LandingPage() {
                 "1 business location",
                 "Unlimited reviews",
                 "AI draft responses",
-                "Email + WhatsApp alerts",
+                "Email alerts",
               ].map((f) => (
                 <li key={f} className="flex items-center gap-2 text-slate-200">
                   <span className="text-emerald-400 font-bold">✓</span> {f}

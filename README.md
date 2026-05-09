@@ -190,7 +190,6 @@ ReviewResponder/
 
 - [ ] Team collaboration (invite team members)
 - [ ] Auto-publish positive reviews
-- [ ] WhatsApp alerts for negative reviews
 - [ ] Google Business Profile API posting
 - [ ] Cron jobs for auto-monitoring
 - [ ] Stripe + Razorpay payments

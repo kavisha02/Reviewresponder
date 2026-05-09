@@ -11,7 +11,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Common stop words to filter out
+// Common words to filter out
 const STOP_WORDS = new Set([
   "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
   "from", "up", "about", "into", "through", "during", "before", "after", "above", "below",
