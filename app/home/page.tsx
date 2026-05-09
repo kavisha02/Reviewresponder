@@ -106,6 +106,17 @@ export default async function HomePage() {
       border:      "hover:border-purple-700/60",
     },
     {
+      href:        hasBusinesses ? `/dashboard/settings/notifications?business=${firstBizId}` : "/dashboard/setup",
+      icon:        "🔔",
+      iconBg:      "from-cyan-500 to-blue-600",
+      title:       "Notifications",
+      description: "Configure email alerts for negative reviews and daily digest summaries.",
+      cta:         "Manage Notifications →",
+      badge:       null,
+      badgeColor:  "",
+      border:      "hover:border-cyan-700/60",
+    },
+    {
       href:        "/dashboard/setup",
       icon:        "📍",
       iconBg:      "from-sky-500 to-blue-600",
@@ -226,7 +237,7 @@ export default async function HomePage() {
         )}
 
         {/* ── Navigation cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card) => (
             <Link
               key={card.title}
