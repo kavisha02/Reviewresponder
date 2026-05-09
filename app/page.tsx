@@ -234,11 +234,11 @@ export default function LandingPage() {
               body: "Respond in English, Hindi, or Hinglish. Perfect for Indian businesses that serve diverse customer bases.",
             },
             {
-              icon: "🏢",
+              icon: "🔍",
               iconBg: "bg-cyan-950/60",
               iconGlow: "shadow-cyan-500/20",
-              title: "Multi-Location",
-              body: "Manage reviews for all your branches from one dashboard. Agency plan supports up to 10 locations.",
+              title: "Deep AI Analysis",
+              body: "Uncover hidden patterns in customer feedback. AI-powered topic extraction, sentiment insights, and actionable recommendations.",
             },
           ].map((feat) => (
             <div
