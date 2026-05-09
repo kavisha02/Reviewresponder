@@ -4,7 +4,8 @@ import { useState } from "react";
 
 interface NotificationSettings {
   negativeAlerts: boolean;
-  dailyDigest: boolean;
+  weeklyDigest: boolean;
+  digestDay: string;
   digestTime: string;
   email: string;
 }
@@ -18,7 +19,8 @@ export default function NotificationSettingsClient({
 }) {
   const [settings, setSettings] = useState<NotificationSettings>({
     negativeAlerts: true,
-    dailyDigest: true,
+    weeklyDigest: true,
+    digestDay: "monday",
     digestTime: "09:00",
     email: userEmail,
   });
@@ -101,45 +103,66 @@ export default function NotificationSettingsClient({
         </p>
       </div>
 
-      {/* Daily Digest */}
+      {/* Weekly Digest */}
       <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-white">
-              📊 Daily Digest
+              📊 Weekly Digest
             </h3>
             <p className="text-slate-400 text-sm mt-1">
-              Receive a daily summary of reviews, ratings, and response metrics
+              Receive a weekly summary of reviews, ratings, and response metrics
             </p>
           </div>
           <button
-            onClick={() => handleToggle("dailyDigest")}
+            onClick={() => handleToggle("weeklyDigest")}
             className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-              settings.dailyDigest ? "bg-emerald-600" : "bg-slate-600"
+              settings.weeklyDigest ? "bg-emerald-600" : "bg-slate-600"
             }`}
           >
             <span
               className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                settings.dailyDigest ? "translate-x-7" : "translate-x-1"
+                settings.weeklyDigest ? "translate-x-7" : "translate-x-1"
               }`}
             />
           </button>
         </div>
 
-        {settings.dailyDigest && (
-          <div className="mt-4 pt-4 border-t border-slate-700">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Preferred time for digest
-            </label>
-            <input
-              type="time"
-              value={settings.digestTime}
-              onChange={(e) => handleChange("digestTime", e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-            />
-            <p className="text-slate-500 text-xs mt-2">
-              Digest will be sent daily at {settings.digestTime} (your timezone)
-            </p>
+        {settings.weeklyDigest && (
+          <div className="mt-4 pt-4 border-t border-slate-700 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Day of week
+              </label>
+              <select
+                value={settings.digestDay}
+                onChange={(e) => handleChange("digestDay", e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+              >
+                <option value="monday">Monday</option>
+                <option value="tuesday">Tuesday</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="thursday">Thursday</option>
+                <option value="friday">Friday</option>
+                <option value="saturday">Saturday</option>
+                <option value="sunday">Sunday</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Preferred time for digest
+              </label>
+              <input
+                type="time"
+                value={settings.digestTime}
+                onChange={(e) => handleChange("digestTime", e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+              />
+              <p className="text-slate-500 text-xs mt-2">
+                Digest will be sent every {settings.digestDay} at {settings.digestTime} (your timezone)
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -181,9 +204,9 @@ export default function NotificationSettingsClient({
       {/* Info Box */}
       <div className="bg-indigo-950/30 border border-indigo-700/50 rounded-lg p-4">
         <p className="text-sm text-indigo-200">
-          <strong>💡 Tip:</strong> Enable both negative alerts and daily digest to stay
+          <strong>💡 Tip:</strong> Enable both negative alerts and weekly digest to stay
           on top of your reviews. Alerts notify you immediately of issues, while the
-          digest gives you a complete overview.
+          digest gives you a complete overview once a week.
         </p>
       </div>
     </div>

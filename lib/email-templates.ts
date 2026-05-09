@@ -176,7 +176,7 @@ export function getDailyDigestHTML(data: DailyDigestData): string {
 
             <div class="footer">
               <p>© 2025 ReviewResponder • ${data.businessName}</p>
-              <p>You're receiving this daily digest because you have notifications enabled.</p>
+              <p>You're receiving this weekly digest because you have notifications enabled.</p>
             </div>
           </div>
         </div>

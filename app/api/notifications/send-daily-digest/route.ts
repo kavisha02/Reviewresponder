@@ -1,8 +1,8 @@
 /**
- * API Route: POST /api/notifications/send-daily-digest
+ * API Route: POST /api/notifications/send-weekly-digest
  *
- * Sends a daily digest email with review summary and metrics.
- * Should be called via a cron job (e.g., every day at 9 AM).
+ * Sends a weekly digest email with review summary and metrics.
+ * Should be called via a cron job (e.g., every Monday at 9 AM).
  *
  * Request body: { businessId: string }
  * Response: { success: boolean, messageId?: string }
@@ -68,10 +68,10 @@ export async function POST(request: Request) {
     const negativeReviewsCount = reviews.filter((r) => r.rating <= 2).length;
     const positiveReviewsCount = reviews.filter((r) => r.rating >= 4).length;
 
-    // Get reviews from last 24 hours
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // Get reviews from last 7 days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const newReviews = reviews.filter(
-      (r) => new Date(r.review_date) > yesterday
+      (r) => new Date(r.review_date) > sevenDaysAgo
     );
 
     // Format recent reviews for display
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     const result = await resend.emails.send({
       from: "ReviewResponder <digest@reviewresponder.com>",
       to: userData.email,
-      subject: `📊 Daily Review Digest: ${business.name}`,
+      subject: `📊 Weekly Review Digest: ${business.name}`,
       html: getDailyDigestHTML({
         businessName: business.name,
         businessType: business.business_type,
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
     });
 
   } catch (err) {
-    console.error("Daily digest error:", err);
+    console.error("Weekly digest error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
