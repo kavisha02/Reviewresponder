@@ -528,7 +528,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
                     </div>
                     <p className="text-slate-300 font-medium">{review.author_name}</p>
                     <p className="text-slate-500 text-xs" suppressHydrationWarning>
-                      {new Date(review.review_date).toLocaleDateString()}
+                      {review.review_date ? new Date(review.review_date).toLocaleDateString() : "Unknown date"}
                     </p>
                   </div>
                   <span className="text-3xl">#{idx + 1}</span>
