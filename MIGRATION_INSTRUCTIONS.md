@@ -1,6 +1,6 @@
-# Database Migration: Add google_maps_url Column
+# Database Migrations
 
-## What to do:
+## Migration 1: Add google_maps_url Column
 
 1. Go to your Supabase dashboard: https://supabase.com/dashboard
 2. Select your project
@@ -9,8 +9,6 @@
 5. Copy and paste the SQL from `supabase/migrations/add_google_maps_url.sql`
 6. Click **Run**
 
-## SQL to execute:
-
 ```sql
 ALTER TABLE businesses
 ADD COLUMN google_maps_url TEXT;
@@ -18,14 +16,35 @@ ADD COLUMN google_maps_url TEXT;
 CREATE INDEX idx_businesses_google_maps_url ON businesses(google_maps_url);
 ```
 
-## What this does:
+## Migration 2: Add Owner Response Fields
 
+1. Go to **SQL Editor** → **New Query**
+2. Copy and paste the SQL from `supabase/migrations/add_owner_response_fields.sql`
+3. Click **Run**
+
+```sql
+ALTER TABLE reviews
+ADD COLUMN owner_response TEXT,
+ADD COLUMN owner_response_date TIMESTAMP WITH TIME ZONE;
+
+CREATE INDEX idx_reviews_owner_response ON reviews(owner_response);
+```
+
+## What These Do:
+
+**Migration 1:**
 - Adds a `google_maps_url` column to store the Google Maps business listing URL
-- Creates an index for faster lookups
-- This column is used by the Apify scraper to fetch reviews
+- Used by the Apify scraper to fetch reviews
 
-## After running:
+**Migration 2:**
+- Adds `owner_response` column to store existing owner responses from Google Maps
+- Adds `owner_response_date` column to store when the owner responded
+- These are populated when syncing reviews from Apify
 
-- New businesses will no longer get 28 mock reviews seeded automatically
-- Users must enter a Google Maps URL during setup or add it later
-- Once a URL is set, they can click "Fetch More Reviews" to sync real reviews from Google Maps
+## After Running:
+
+- New businesses can have Google Maps URLs set during setup
+- Reviews synced from Apify will include owner responses if they exist
+- Users can save AI-generated responses which update the `published_response` column
+- Response rate will be calculated based on reviews with `status = 'published'`
+

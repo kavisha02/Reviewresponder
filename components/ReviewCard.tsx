@@ -146,6 +146,11 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
     setIsEditing(false);
     setSaving(false);
     onStatusChange?.("published");
+
+    // Refresh page to update stats
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   }
 
   return (
