@@ -84,6 +84,8 @@ export async function POST(request: Request) {
       rating: item.stars || item.rating || 5,
       review_text: item.text || item.reviewText || item.content || null,
       review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
+      owner_response: item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null,
+      owner_response_date: item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null,
       status: "new",
     }));
 

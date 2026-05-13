@@ -31,5 +31,7 @@ export interface Review {
   draft_response: string | null;
   published_response: string | null;
   published_at: string | null;
+  owner_response: string | null;
+  owner_response_date: string | null;
   created_at: string;
 }

@@ -31,17 +31,25 @@ export default function DashboardClient({
   business = null,
 }: Props) {
   const [sortedReviews, setSortedReviews] = useState(allReviews);
+  const [reviews, setReviews] = useState(allReviews);
 
   // Default sort by urgency on mount
   useEffect(() => {
-    const sorted = [...allReviews].sort((a, b) => {
+    const sorted = [...reviews].sort((a, b) => {
       const aIsUrgent = a.status === "new" && a.rating <= 2 ? 1 : 0;
       const bIsUrgent = b.status === "new" && b.rating <= 2 ? 1 : 0;
       if (aIsUrgent !== bIsUrgent) return bIsUrgent - aIsUrgent;
       return a.rating - b.rating;
     });
     setSortedReviews(sorted);
-  }, [allReviews]);
+  }, [reviews]);
+
+  // Handle status change from ReviewCard
+  function handleStatusChange(reviewId: string, newStatus: string) {
+    setReviews(reviews.map(r =>
+      r.id === reviewId ? { ...r, status: newStatus as any } : r
+    ));
+  }
 
   return (
     <>
@@ -84,7 +92,11 @@ export default function DashboardClient({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sortedReviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
+            <ReviewCard
+              key={review.id}
+              review={review}
+              onStatusChange={(newStatus) => handleStatusChange(review.id, newStatus)}
+            />
           ))}
         </div>
       )}

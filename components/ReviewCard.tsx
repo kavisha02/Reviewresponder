@@ -2,12 +2,14 @@
  * ReviewCard — full interactive review card.
  *
  * States a card moves through:
- *   new  →  (click Generate)  →  draft
+ *   new  →  (click Generate)  →  draft  →  (click Save)  →  published
  *
+ * If owner_response exists, shows that instead of generating AI response.
  * In "draft" state the owner can:
  *   - Read the AI draft
  *   - Click "Edit" to open an inline textarea and change any word
  *   - Click "Regenerate" to get a fresh AI draft
+ *   - Click "Save" to publish the response
  *
  * Draft responses are saved but not published to Google.
  */
@@ -20,12 +22,14 @@ import { Review } from "@/lib/types";
 const STATUS_STYLES: Record<string, string> = {
   new:       "bg-yellow-900/50 text-yellow-300 border-yellow-700/50",
   draft:     "bg-blue-900/50 text-blue-300 border-blue-700/50",
+  published: "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
   ignored:   "bg-slate-800 text-slate-400 border-slate-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   new:       "Needs Response",
   draft:     "Draft Ready",
+  published: "Responded",
   ignored:   "Ignored",
 };
 
@@ -65,8 +69,9 @@ function formatDate(dateStr: string | null): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default function ReviewCard({ review }: { review: Review }) {
+export default function ReviewCard({ review, onStatusChange }: { review: Review; onStatusChange?: (newStatus: string) => void }) {
   const isNegative = review.rating <= 2;
+  const hasOwnerResponse = review.owner_response && review.owner_response.trim().length > 0;
 
   // ── Local UI state ──────────────────────────────────────────────────────
   const [status,     setStatus]     = useState(review.status);
@@ -77,6 +82,7 @@ export default function ReviewCard({ review }: { review: Review }) {
   const [editedText, setEditedText] = useState(review.draft_response ?? "");
 
   const [generating, setGenerating] = useState(false);
+  const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState("");
 
   const initials = review.author_name
@@ -106,6 +112,40 @@ export default function ReviewCard({ review }: { review: Review }) {
     setEditedText(data.draft);
     setStatus("draft");
     setGenerating(false);
+  }
+
+  // ── Save response ───────────────────────────────────────────────────────
+  async function handleSave() {
+    if (!editedText.trim()) {
+      setError("Response cannot be empty");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    const res = await fetch("/api/reviews/save-response", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reviewId: review.id,
+        response: editedText,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error ?? "Failed to save response");
+      setSaving(false);
+      return;
+    }
+
+    setStatus("published");
+    setDraft(editedText);
+    setIsEditing(false);
+    setSaving(false);
+    onStatusChange?.("published");
   }
 
   return (
@@ -157,6 +197,19 @@ export default function ReviewCard({ review }: { review: Review }) {
             <span className="text-slate-500 italic">No written review — rating only</span>
           )}
         </p>
+
+        {/* ── OWNER RESPONSE: Show if exists ── */}
+        {hasOwnerResponse && (
+          <div className="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-emerald-400 text-xs font-semibold uppercase tracking-wide">
+                Owner Response
+              </span>
+              <span className="text-slate-500 text-xs">· {formatDate(review.owner_response_date)}</span>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">{review.owner_response}</p>
+          </div>
+        )}
 
         {/* ── DRAFT state: AI draft box with edit controls ── */}
         {status === "draft" && draft && (
@@ -212,8 +265,8 @@ export default function ReviewCard({ review }: { review: Review }) {
         {status !== "ignored" && (
           <div className="flex gap-2 flex-wrap">
 
-            {/* Generate — shown when no draft */}
-            {status === "new" && (
+            {/* Generate — shown when no draft and no owner response */}
+            {status === "new" && !hasOwnerResponse && (
               <button
                 onClick={handleGenerate}
                 disabled={generating}
@@ -245,6 +298,25 @@ export default function ReviewCard({ review }: { review: Review }) {
                 className="text-xs px-3 py-1.5 rounded-lg border bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border-slate-600 transition-all duration-200 disabled:opacity-50"
               >
                 {generating ? "Regenerating…" : "Regenerate"}
+              </button>
+            )}
+
+            {/* Save — shown when editing or draft exists */}
+            {status === "draft" && (
+              <button
+                onClick={handleSave}
+                disabled={saving || !editedText.trim()}
+                className="text-xs px-3 py-1.5 rounded-lg border bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border-emerald-700/50 hover:border-emerald-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Saving…
+                  </span>
+                ) : "Save Response"}
               </button>
             )}
           </div>
