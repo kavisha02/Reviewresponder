@@ -74,16 +74,17 @@ export async function POST(request: Request) {
     }
 
     // Transform Apify reviews to our format
+    // console.log(items);
     const reviewsToInsert = items.map((item: any) => ({
-      business_id:      businessId,
-      platform:         "google",
-      external_id:      item.reviewId || item.id || `apify_${item.publishedAtDate}`,
-      author_name:      item.reviewerName || item.reviewer || item.author || "Anonymous",
+      business_id: businessId,
+      platform: "google",
+      external_id: item.reviewId || item.id || `apify_${item.publishedAtDate}`,
+      author_name: item.name || item.reviewerName || item.reviewer || item.author || "Anonymous",
       author_photo_url: item.reviewerPhotoUrl || item.reviewerPhoto || item.authorPhoto || null,
-      rating:           item.stars || item.rating || 5,
-      review_text:      item.text || item.reviewText || item.content || null,
-      review_date:      item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
-      status:           "new",
+      rating: item.stars || item.rating || 5,
+      review_text: item.text || item.reviewText || item.content || null,
+      review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
+      status: "new",
     }));
 
     // Check for duplicates before inserting
