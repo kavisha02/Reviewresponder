@@ -45,9 +45,10 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   // Calculate statistics
   const totalReviews = reviews.length;
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+  const avgRatingNum = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
     : 0;
+  const avgRating = avgRatingNum.toFixed(1);
 
   const positiveReviews = reviews.filter(r => r.rating >= 4);
   const negativeReviews = reviews.filter(r => r.rating <= 2);
@@ -204,7 +205,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
               <div>
                 <p className="text-slate-400 text-sm mb-1">Customer Sentiment</p>
                 <p className="text-white font-medium">
-                  {typeof avgRating === "number" && avgRating >= 4 ? "Highly Positive" : typeof avgRating === "number" && avgRating >= 3 ? "Mixed" : "Needs Improvement"}
+                  {avgRatingNum >= 4.5 ? "Excellent" : avgRatingNum >= 4 ? "Highly Positive" : avgRatingNum >= 3 ? "Mixed" : "Needs Improvement"}
                 </p>
               </div>
               {locationSummary && (

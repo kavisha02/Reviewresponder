@@ -59,6 +59,12 @@ function timeAgo(dateStr: string | null): string {
   return `${months} month${months > 1 ? "s" : ""} ago`;
 }
 
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function ReviewCard({ review }: { review: Review }) {
   const isNegative = review.rating <= 2;
 
@@ -128,7 +134,7 @@ export default function ReviewCard({ review }: { review: Review }) {
             </div>
             <div>
               <div className="text-white font-medium text-sm">{review.author_name ?? "Anonymous"}</div>
-              <div className="text-slate-500 text-xs">{timeAgo(review.review_date)}</div>
+              <div className="text-slate-500 text-xs">{formatDate(review.review_date)} · {timeAgo(review.review_date)}</div>
             </div>
           </div>
 

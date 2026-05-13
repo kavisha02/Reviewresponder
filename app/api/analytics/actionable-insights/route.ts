@@ -55,6 +55,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if all reviews are 5-star
+    const allFiveStar = reviews.every(r => r.rating === 5);
+    if (allFiveStar) {
+      return NextResponse.json({
+        insights: [{
+          insight: "All reviews are 5-star",
+          impact: "Your business is performing exceptionally well with perfect ratings across all reviews.",
+          recommendation: "Continue maintaining your current service standards and consider sharing customer testimonials in your marketing."
+        }]
+      }, { status: 200 });
+    }
+
     // Sample reviews for efficiency (max 15)
     const sampleReviews = reviews.slice(0, 15);
     const reviewsText = sampleReviews

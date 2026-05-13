@@ -77,12 +77,12 @@ export async function POST(request: Request) {
     const reviewsToInsert = items.map((item: any) => ({
       business_id:      businessId,
       platform:         "google",
-      external_id:      item.reviewId || `apify_${item.publishedAtDate}`,
-      author_name:      item.reviewerName || "Anonymous",
-      author_photo_url: item.reviewerPhotoUrl || null,
-      rating:           item.stars || 5,
-      review_text:      item.text || null,
-      review_date:      item.publishedAtDate || new Date().toISOString(),
+      external_id:      item.reviewId || item.id || `apify_${item.publishedAtDate}`,
+      author_name:      item.reviewerName || item.reviewer || item.author || "Anonymous",
+      author_photo_url: item.reviewerPhotoUrl || item.reviewerPhoto || item.authorPhoto || null,
+      rating:           item.stars || item.rating || 5,
+      review_text:      item.text || item.reviewText || item.content || null,
+      review_date:      item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
       status:           "new",
     }));
 

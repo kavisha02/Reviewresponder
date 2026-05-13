@@ -60,6 +60,16 @@ export async function POST(request: Request) {
     const negative = reviews.filter(r => r.rating <= 2);
     const mixed = reviews.filter(r => r.rating === 3);
 
+    // Check if all reviews are 5-star
+    const allFiveStar = reviews.every(r => r.rating === 5);
+    if (allFiveStar) {
+      return NextResponse.json({
+        positive: "All reviews are 5-star ratings. Your customers are extremely satisfied with your service.",
+        negative: "No negative reviews found.",
+        mixed: "No mixed reviews found."
+      }, { status: 200 });
+    }
+
     // Sample for efficiency
     const samplePositive = positive.slice(0, 3).map(r => r.review_text).join(" | ");
     const sampleNegative = negative.slice(0, 3).map(r => r.review_text).join(" | ");
