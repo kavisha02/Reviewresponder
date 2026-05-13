@@ -34,6 +34,7 @@ export default function SetupPage() {
 
   const [name, setName]                   = useState("");
   const [businessType, setBusinessType]   = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState("");
   // Whether this user already has at least one location
@@ -66,7 +67,7 @@ export default function SetupPage() {
     const res = await fetch("/api/business/create", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ name, businessType }),
+      body:    JSON.stringify({ name, businessType, googleMapsUrl }),
     });
 
     const data = await res.json();
@@ -166,6 +167,24 @@ export default function SetupPage() {
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Google Maps URL */}
+            <div>
+              <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Google Maps Business URL <span className="text-slate-500">(optional)</span>
+              </label>
+              <input
+                id="url"
+                type="url"
+                value={googleMapsUrl}
+                onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                placeholder="https://www.google.com/maps/place/..."
+                className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Paste the URL from your Google Maps business listing to fetch reviews automatically.
+              </p>
             </div>
 
             {/* Error */}

@@ -204,7 +204,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
               <div>
                 <p className="text-slate-400 text-sm mb-1">Customer Sentiment</p>
                 <p className="text-white font-medium">
-                  {avgRating >= 4 ? "Highly Positive" : avgRating >= 3 ? "Mixed" : "Needs Improvement"}
+                  {typeof avgRating === "number" && avgRating >= 4 ? "Highly Positive" : typeof avgRating === "number" && avgRating >= 3 ? "Mixed" : "Needs Improvement"}
                 </p>
               </div>
               {locationSummary && (

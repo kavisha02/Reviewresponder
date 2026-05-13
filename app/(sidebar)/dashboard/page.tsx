@@ -131,6 +131,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           allReviews={allReviews}
           isAllLocations={isAll}
           businessId={isAll ? "" : selectedId}
+          business={business}
         />
       </div>
     </main>

@@ -99,7 +99,17 @@ export async function POST(request: Request) {
     }
 
     // Transform Outscraper reviews to our format
-    const reviewsToInsert = placeData.reviews.map((review: any) => ({
+    const reviewsToInsert: Array<{
+      business_id: string;
+      platform: string;
+      external_id: string;
+      author_name: string;
+      author_photo_url: string | null;
+      rating: number;
+      review_text: string | null;
+      review_date: string;
+      status: string;
+    }> = placeData.reviews.map((review: any) => ({
       business_id:   businessId,
       platform:      "google",
       external_id:   review.review_id || `outscraper_${review.review_datetime_utc}`,
@@ -108,13 +118,32 @@ export async function POST(request: Request) {
       rating:        parseInt(review.review_rating) || 5,
       review_text:   review.review_text || null,
       review_date:   review.review_datetime_utc || new Date().toISOString(),
-      status:        "new", // All synced reviews start as "new"
+      status:        "new",
     }));
+
+    // Check for duplicates before inserting
+    const existingExternalIds = reviewsToInsert.map((r) => r.external_id);
+
+    const { data: existingReviews } = await supabase
+      .from("reviews")
+      .select("external_id")
+      .eq("business_id", businessId)
+      .in("external_id", existingExternalIds);
+
+    const existingIds = new Set(existingReviews?.map((r) => r.external_id) || []);
+    const newReviews = reviewsToInsert.filter((r) => !existingIds.has(r.external_id));
+
+    if (newReviews.length === 0) {
+      return NextResponse.json(
+        { success: true, count: 0, message: "All reviews already synced" },
+        { status: 200 }
+      );
+    }
 
     // Insert reviews into database
     const { error: insertError, data: inserted } = await supabase
       .from("reviews")
-      .insert(reviewsToInsert)
+      .insert(newReviews)
       .select();
 
     if (insertError) {

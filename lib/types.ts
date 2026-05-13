@@ -10,6 +10,7 @@ export interface Business {
   place_id: string | null;
   address: string | null;
   business_type: string | null;
+  google_maps_url: string | null;
   tone: string;
   language: string;
   auto_publish_positive: boolean;

@@ -11,21 +11,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Review } from "@/lib/types";
+import { Review, Business } from "@/lib/types";
 import ReviewCard from "@/components/ReviewCard";
 import ReviewSortDropdown from "@/components/ReviewSortDropdown";
 import SyncReviewsButton from "@/components/SyncReviewsButton";
+import SyncApifyModal from "@/components/SyncApifyModal";
 
 interface Props {
   allReviews: Review[];
   isAllLocations?: boolean;
   businessId?: string;
+  business?: Business | null;
 }
 
 export default function DashboardClient({
   allReviews,
   isAllLocations = false,
   businessId = "",
+  business = null,
 }: Props) {
   const [sortedReviews, setSortedReviews] = useState(allReviews);
 
@@ -52,8 +55,14 @@ export default function DashboardClient({
               onSortChange={setSortedReviews}
             />
           )}
-          {!isAllLocations && businessId && (
-            <SyncReviewsButton businessId={businessId} />
+          {!isAllLocations && businessId && business && (
+            <>
+              {business.google_maps_url ? (
+                <SyncApifyModal businessId={businessId} googleMapsUrl={business.google_maps_url} />
+              ) : (
+                <SyncReviewsButton businessId={businessId} />
+              )}
+            </>
           )}
           {allReviews.length > 0 && (
             <span className="text-xs text-slate-500">

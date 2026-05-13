@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, businessType } = await request.json();
+    const { name, businessType, googleMapsUrl } = await request.json();
 
     if (!name?.trim()) {
       return NextResponse.json({ error: "Business name is required" }, { status: 400 });
@@ -36,9 +36,10 @@ export async function POST(request: Request) {
     const { data: business, error: businessError } = await supabase
       .from("businesses")
       .insert({
-        user_id:       user.id,
-        name:          name.trim(),
-        business_type: businessType || null,
+        user_id:         user.id,
+        name:            name.trim(),
+        business_type:   businessType || null,
+        google_maps_url: googleMapsUrl?.trim() || null,
       })
       .select()
       .single();

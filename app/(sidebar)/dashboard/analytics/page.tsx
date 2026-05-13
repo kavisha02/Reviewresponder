@@ -368,7 +368,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
                     <div className="flex items-center justify-between">
                       <div className="text-2xl font-bold text-yellow-400">{avgRating}★</div>
                       <div className="text-xs text-slate-500">
-                        {avgRating >= 4 ? "Excellent" : avgRating >= 3 ? "Good" : "Needs Improvement"}
+                        {typeof avgRating === "string" ? "—" : avgRating >= 4 ? "Excellent" : avgRating >= 3 ? "Good" : "Needs Improvement"}
                       </div>
                     </div>
                   </div>

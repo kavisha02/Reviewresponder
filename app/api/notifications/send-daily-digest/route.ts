@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 import { getDailyDigestHTML } from "@/lib/email-templates";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: Request) {
   try {
@@ -97,6 +97,13 @@ export async function POST(request: Request) {
     const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?business=${businessId}`;
 
     // Send email via Resend
+    if (!resend) {
+      return NextResponse.json(
+        { error: "Email service not configured" },
+        { status: 500 }
+      );
+    }
+
     const result = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
       to: userData.email,
