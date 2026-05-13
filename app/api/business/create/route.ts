@@ -2,19 +2,14 @@
  * API Route: POST /api/business/create
  *
  * Called when a user connects their business for the first time.
- * Does two things:
- *  1. Creates a row in the `businesses` table for this user
- *  2. Seeds 28 diverse mock reviews so the dashboard has rich data to show
+ * Creates a row in the `businesses` table for this user.
  *
- * In a future phase, step 2 will be replaced with a live Google API call.
- *
- * Request body: { name, businessType }
+ * Request body: { name, businessType, googleMapsUrl }
  * Response:     { businessId }
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getMockReviews } from "@/lib/mock-reviews";
 
 export async function POST(request: Request) {
   try {
@@ -47,17 +42,6 @@ export async function POST(request: Request) {
     if (businessError) {
       console.error("Business insert error:", businessError);
       return NextResponse.json({ error: businessError.message }, { status: 500 });
-    }
-
-    // Seed mock reviews for this business
-    const { error: reviewsError } = await supabase
-      .from("reviews")
-      .insert(getMockReviews(business.id));
-
-    if (reviewsError) {
-      console.error("Reviews seed error:", reviewsError);
-      // Business was created — don't fail the whole request over reviews
-      return NextResponse.json({ businessId: business.id, warning: "Reviews not seeded" });
     }
 
     return NextResponse.json({ businessId: business.id });
