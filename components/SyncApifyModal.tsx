@@ -10,7 +10,7 @@ interface Props {
 
 export default function SyncApifyModal({ businessId, googleMapsUrl, onSuccess }: Props) {
   const [open, setOpen] = useState(false);
-  const [maxReviews, setMaxReviews] = useState<number | "">();
+  const [maxReviews, setMaxReviews] = useState<number | "">(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
