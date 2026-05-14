@@ -10,7 +10,7 @@ interface Props {
 
 export default function SyncApifyModal({ businessId, googleMapsUrl, onSuccess }: Props) {
   const [open, setOpen] = useState(false);
-  const [maxReviews, setMaxReviews] = useState(100);
+  const [maxReviews, setMaxReviews] = useState<number | "">();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -96,7 +96,8 @@ export default function SyncApifyModal({ businessId, googleMapsUrl, onSuccess }:
                     min="1"
                     max="500"
                     value={maxReviews}
-                    onChange={(e) => setMaxReviews(parseInt(e.target.value) || 0)}
+                    onChange={(e) => setMaxReviews(e.target.value ? parseInt(e.target.value) : "")}
+                    placeholder="Enter number (1-500)"
                     className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200"
                   />
                   <p className="text-xs text-slate-500 mt-2">

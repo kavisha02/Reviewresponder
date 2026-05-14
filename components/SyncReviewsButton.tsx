@@ -2,7 +2,7 @@
  * SyncReviewsButton — client component to sync real reviews from Google Places API.
  *
  * Shows a button that opens a modal to enter Google Place ID,
- * then fetches and syncs real reviews from Google Places (free tier - up to 5 reviews).
+ * then fetches and syncs real reviews from Google Places 
  */
 
 "use client";
@@ -106,7 +106,7 @@ export default function SyncReviewsButton({ businessId }: Props) {
                 </div>
 
                 <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-lg px-3 py-2 mb-4 text-indigo-300 text-xs">
-                  <strong>Free tier:</strong> Up to 5 reviews per sync from Google Places API
+                  <strong>Google Places API:</strong> Syncs reviews from your Google Business Profile
                 </div>
 
                 {error && (

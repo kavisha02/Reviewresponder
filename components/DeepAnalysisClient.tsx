@@ -55,6 +55,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       const cachedSentiment = localStorage.getItem(getCacheKey(businessId, "sentiment"));
       const cachedInsights = localStorage.getItem(getCacheKey(businessId, "insights"));
       const cachedSummary = localStorage.getItem(getCacheKey(businessId, "summary"));
+      const cachedReviewCount = localStorage.getItem(`${getCacheKey(businessId, "category")}_count`);
 
       if (cachedCategory) setCategoryAnalysis(JSON.parse(cachedCategory));
       if (cachedSentiment) setSentimentAnalysis(JSON.parse(cachedSentiment));
@@ -62,6 +63,14 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       if (cachedSummary) setLocationSummary(cachedSummary);
     }
   }, [businessId]);
+
+  // Check if analysis is stale (new reviews added since last analysis)
+  function isAnalysisStale(type: string): boolean {
+    if (typeof window === "undefined") return false;
+    const cachedCount = localStorage.getItem(`${getCacheKey(businessId, type)}_count`);
+    if (!cachedCount) return true; // No cache, analysis is stale
+    return parseInt(cachedCount) !== reviews.length; // Different review count, analysis is stale
+  }
 
   // Calculate statistics
   const totalReviews = reviews.length;
@@ -99,6 +108,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   // Fetch category analysis
   async function handleCategoryAnalysis() {
+    // Check if analysis is fresh (no new reviews)
+    if (categoryAnalysis && !isAnalysisStale("category")) {
+      setError("Analysis is up to date. No new reviews to analyze.");
+      return;
+    }
+
     setLoadingCategory(true);
     setError("");
     try {
@@ -119,6 +134,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       setCategoryAnalysis(result);
       if (typeof window !== "undefined") {
         localStorage.setItem(getCacheKey(businessId, "category"), JSON.stringify(result));
+        localStorage.setItem(`${getCacheKey(businessId, "category")}_count`, reviews.length.toString());
       }
       setLoadingCategory(false);
     } catch (err) {
@@ -129,6 +145,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   // Fetch sentiment analysis
   async function handleSentimentAnalysis() {
+    // Check if analysis is fresh (no new reviews)
+    if (sentimentAnalysis && !isAnalysisStale("sentiment")) {
+      setError("Analysis is up to date. No new reviews to analyze.");
+      return;
+    }
+
     setLoadingSentiment(true);
     setError("");
     try {
@@ -149,6 +171,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       setSentimentAnalysis(result);
       if (typeof window !== "undefined") {
         localStorage.setItem(getCacheKey(businessId, "sentiment"), JSON.stringify(result));
+        localStorage.setItem(`${getCacheKey(businessId, "sentiment")}_count`, reviews.length.toString());
       }
       setLoadingSentiment(false);
     } catch (err) {
@@ -159,6 +182,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   // Fetch actionable insights
   async function handleActionableInsights() {
+    // Check if analysis is fresh (no new reviews)
+    if (actionableInsights && !isAnalysisStale("insights")) {
+      setError("Analysis is up to date. No new reviews to analyze.");
+      return;
+    }
+
     setLoadingInsights(true);
     setError("");
     try {
@@ -179,6 +208,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       setActionableInsights(result.insights);
       if (typeof window !== "undefined") {
         localStorage.setItem(getCacheKey(businessId, "insights"), JSON.stringify(result.insights));
+        localStorage.setItem(`${getCacheKey(businessId, "insights")}_count`, reviews.length.toString());
       }
       setLoadingInsights(false);
     } catch (err) {
@@ -189,6 +219,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   // Fetch location summary
   async function handleLocationSummary() {
+    // Check if analysis is fresh (no new reviews)
+    if (locationSummary && !isAnalysisStale("summary")) {
+      setError("Analysis is up to date. No new reviews to analyze.");
+      return;
+    }
+
     setLoadingSummary(true);
     setError("");
     try {
@@ -209,6 +245,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       setLocationSummary(result.summary);
       if (typeof window !== "undefined") {
         localStorage.setItem(getCacheKey(businessId, "summary"), result.summary);
+        localStorage.setItem(`${getCacheKey(businessId, "summary")}_count`, reviews.length.toString());
       }
       setLoadingSummary(false);
     } catch (err) {
