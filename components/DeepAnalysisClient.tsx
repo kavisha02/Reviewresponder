@@ -22,6 +22,11 @@ interface Props {
   business: Business;
 }
 
+// Cache key generator
+function getCacheKey(businessId: string, type: string): string {
+  return `analysis_${businessId}_${type}`;
+}
+
 export default function DeepAnalysisClient({ businessId, reviews, business }: Props) {
   const [categoryAnalysis, setCategoryAnalysis] = useState<{
     topics: Topic[];
@@ -42,6 +47,21 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   const [loadingSummary, setLoadingSummary] = useState(false);
 
   const [error, setError] = useState("");
+
+  // Load cached analysis on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const cachedCategory = localStorage.getItem(getCacheKey(businessId, "category"));
+      const cachedSentiment = localStorage.getItem(getCacheKey(businessId, "sentiment"));
+      const cachedInsights = localStorage.getItem(getCacheKey(businessId, "insights"));
+      const cachedSummary = localStorage.getItem(getCacheKey(businessId, "summary"));
+
+      if (cachedCategory) setCategoryAnalysis(JSON.parse(cachedCategory));
+      if (cachedSentiment) setSentimentAnalysis(JSON.parse(cachedSentiment));
+      if (cachedInsights) setActionableInsights(JSON.parse(cachedInsights));
+      if (cachedSummary) setLocationSummary(cachedSummary);
+    }
+  }, [businessId]);
 
   // Calculate statistics
   const totalReviews = reviews.length;
@@ -97,6 +117,9 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setCategoryAnalysis(result);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(getCacheKey(businessId, "category"), JSON.stringify(result));
+      }
       setLoadingCategory(false);
     } catch (err) {
       setError("An error occurred while analyzing categories");
@@ -124,6 +147,9 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setSentimentAnalysis(result);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(getCacheKey(businessId, "sentiment"), JSON.stringify(result));
+      }
       setLoadingSentiment(false);
     } catch (err) {
       setError("An error occurred while analyzing sentiment");
@@ -151,6 +177,9 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setActionableInsights(result.insights);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(getCacheKey(businessId, "insights"), JSON.stringify(result.insights));
+      }
       setLoadingInsights(false);
     } catch (err) {
       setError("An error occurred while generating insights");
@@ -178,6 +207,9 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setLocationSummary(result.summary);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(getCacheKey(businessId, "summary"), result.summary);
+      }
       setLoadingSummary(false);
     } catch (err) {
       setError("An error occurred while generating summary");
