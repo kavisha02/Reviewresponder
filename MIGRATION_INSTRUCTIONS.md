@@ -30,6 +30,17 @@ ADD COLUMN owner_response_date TIMESTAMP WITH TIME ZONE;
 CREATE INDEX idx_reviews_owner_response ON reviews(owner_response);
 ```
 
+## Migration 3: Add Analytics Cache Table
+
+1. Go to **SQL Editor** → **New Query**
+2. Copy and paste the SQL from `supabase/migrations/add_analytics_cache_table.sql`
+3. Click **Run**
+
+This creates the `analytics_cache` table for storing analysis results with:
+- Unique constraint on (business_id, analysis_type) for upsert operations
+- Row-level security policies to ensure users only see their own analytics
+- Indexes for fast lookups by business_id, user_id, and analysis_type
+
 ## What These Do:
 
 **Migration 1:**
@@ -41,10 +52,17 @@ CREATE INDEX idx_reviews_owner_response ON reviews(owner_response);
 - Adds `owner_response_date` column to store when the owner responded
 - These are populated when syncing reviews from Apify
 
+**Migration 3:**
+- Creates `analytics_cache` table to store analysis results (category, sentiment, insights, summary)
+- Stores review_count to detect when new reviews are added (cache invalidation)
+- Enables cross-device and cross-browser persistence of analysis results
+- Replaces localStorage-based caching with Supabase database storage
+
 ## After Running:
 
 - New businesses can have Google Maps URLs set during setup
 - Reviews synced from Apify will include owner responses if they exist
 - Users can save AI-generated responses which update the `published_response` column
 - Response rate will be calculated based on reviews with `status = 'published'`
-
+- Analysis results (category, sentiment, insights, summary) persist across devices and browsers
+- Analysis is automatically invalidated when new reviews are fetched

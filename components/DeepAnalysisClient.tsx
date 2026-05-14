@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Business, Review } from "@/lib/types";
+import { getCachedAnalysis, saveCachedAnalysis, isAnalysisCacheStale, type AnalysisType } from "@/lib/supabase/analytics-cache";
 
 interface Topic {
   topic: string;
@@ -20,11 +21,6 @@ interface Props {
   businessId: string;
   reviews: Review[];
   business: Business;
-}
-
-// Cache key generator
-function getCacheKey(businessId: string, type: string): string {
-  return `analysis_${businessId}_${type}`;
 }
 
 export default function DeepAnalysisClient({ businessId, reviews, business }: Props) {
@@ -48,29 +44,32 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   const [error, setError] = useState("");
 
-  // Load cached analysis on mount
+  // Load cached analysis from Supabase on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const cachedCategory = localStorage.getItem(getCacheKey(businessId, "category"));
-      const cachedSentiment = localStorage.getItem(getCacheKey(businessId, "sentiment"));
-      const cachedInsights = localStorage.getItem(getCacheKey(businessId, "insights"));
-      const cachedSummary = localStorage.getItem(getCacheKey(businessId, "summary"));
-      const cachedReviewCount = localStorage.getItem(`${getCacheKey(businessId, "category")}_count`);
+    async function loadCachedAnalysis() {
+      const [categoryCache, sentimentCache, insightsCache, summaryCache] = await Promise.all([
+        getCachedAnalysis(businessId, "category"),
+        getCachedAnalysis(businessId, "sentiment"),
+        getCachedAnalysis(businessId, "insights"),
+        getCachedAnalysis(businessId, "summary"),
+      ]);
 
-      if (cachedCategory) setCategoryAnalysis(JSON.parse(cachedCategory));
-      if (cachedSentiment) setSentimentAnalysis(JSON.parse(cachedSentiment));
-      if (cachedInsights) setActionableInsights(JSON.parse(cachedInsights));
-      if (cachedSummary) setLocationSummary(cachedSummary);
+      if (categoryCache && !isAnalysisCacheStale(categoryCache, reviews.length)) {
+        setCategoryAnalysis(categoryCache.results as typeof categoryAnalysis);
+      }
+      if (sentimentCache && !isAnalysisCacheStale(sentimentCache, reviews.length)) {
+        setSentimentAnalysis(sentimentCache.results as typeof sentimentAnalysis);
+      }
+      if (insightsCache && !isAnalysisCacheStale(insightsCache, reviews.length)) {
+        setActionableInsights(insightsCache.results as typeof actionableInsights);
+      }
+      if (summaryCache && !isAnalysisCacheStale(summaryCache, reviews.length)) {
+        setLocationSummary(summaryCache.results as string);
+      }
     }
-  }, [businessId]);
 
-  // Check if analysis is stale (new reviews added since last analysis)
-  function isAnalysisStale(type: string): boolean {
-    if (typeof window === "undefined") return false;
-    const cachedCount = localStorage.getItem(`${getCacheKey(businessId, type)}_count`);
-    if (!cachedCount) return true; // No cache, analysis is stale
-    return parseInt(cachedCount) !== reviews.length; // Different review count, analysis is stale
-  }
+    loadCachedAnalysis();
+  }, [businessId, reviews.length]);
 
   // Calculate statistics
   const totalReviews = reviews.length;
@@ -109,7 +108,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   // Fetch category analysis
   async function handleCategoryAnalysis() {
     // Check if analysis is fresh (no new reviews)
-    if (categoryAnalysis && !isAnalysisStale("category")) {
+    if (categoryAnalysis) {
       setError("Analysis is up to date. No new reviews to analyze.");
       return;
     }
@@ -132,10 +131,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setCategoryAnalysis(result);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(getCacheKey(businessId, "category"), JSON.stringify(result));
-        localStorage.setItem(`${getCacheKey(businessId, "category")}_count`, reviews.length.toString());
-      }
+      await saveCachedAnalysis(businessId, "category", result, reviews.length);
       setLoadingCategory(false);
     } catch (err) {
       setError("An error occurred while analyzing categories");
@@ -146,7 +142,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   // Fetch sentiment analysis
   async function handleSentimentAnalysis() {
     // Check if analysis is fresh (no new reviews)
-    if (sentimentAnalysis && !isAnalysisStale("sentiment")) {
+    if (sentimentAnalysis) {
       setError("Analysis is up to date. No new reviews to analyze.");
       return;
     }
@@ -169,10 +165,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setSentimentAnalysis(result);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(getCacheKey(businessId, "sentiment"), JSON.stringify(result));
-        localStorage.setItem(`${getCacheKey(businessId, "sentiment")}_count`, reviews.length.toString());
-      }
+      await saveCachedAnalysis(businessId, "sentiment", result, reviews.length);
       setLoadingSentiment(false);
     } catch (err) {
       setError("An error occurred while analyzing sentiment");
@@ -183,7 +176,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   // Fetch actionable insights
   async function handleActionableInsights() {
     // Check if analysis is fresh (no new reviews)
-    if (actionableInsights && !isAnalysisStale("insights")) {
+    if (actionableInsights) {
       setError("Analysis is up to date. No new reviews to analyze.");
       return;
     }
@@ -206,10 +199,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setActionableInsights(result.insights);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(getCacheKey(businessId, "insights"), JSON.stringify(result.insights));
-        localStorage.setItem(`${getCacheKey(businessId, "insights")}_count`, reviews.length.toString());
-      }
+      await saveCachedAnalysis(businessId, "insights", result.insights, reviews.length);
       setLoadingInsights(false);
     } catch (err) {
       setError("An error occurred while generating insights");
@@ -220,7 +210,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   // Fetch location summary
   async function handleLocationSummary() {
     // Check if analysis is fresh (no new reviews)
-    if (locationSummary && !isAnalysisStale("summary")) {
+    if (locationSummary) {
       setError("Analysis is up to date. No new reviews to analyze.");
       return;
     }
@@ -243,10 +233,13 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       }
 
       setLocationSummary(result.summary);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(getCacheKey(businessId, "summary"), result.summary);
-        localStorage.setItem(`${getCacheKey(businessId, "summary")}_count`, reviews.length.toString());
-      }
+      await saveCachedAnalysis(businessId, "summary", result.summary, reviews.length);
+      setLoadingSummary(false);
+    } catch (err) {
+      setError("An error occurred while generating summary");
+      setLoadingSummary(false);
+    }
+  }
       setLoadingSummary(false);
     } catch (err) {
       setError("An error occurred while generating summary");
