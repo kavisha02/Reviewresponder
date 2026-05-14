@@ -14,25 +14,21 @@ const FAQS = [
     items: [
       {
         q: "What is ReviewResponder?",
-        a: "ReviewResponder is an AI-powered platform that helps businesses monitor Google reviews and respond to them quickly. The AI drafts professional responses in seconds — you review, edit if needed, and save them to your dashboard.",
+        a: "ReviewResponder is an AI-powered platform that helps businesses monitor Google reviews and respond to them quickly. The AI drafts professional responses in seconds — you review, edit if needed, and save them.",
       },
       {
         q: "How do I add my business?",
-        a: "After signing in, go to your Home page and click 'Add Location'. Enter your business name and type, and ReviewResponder will create a dedicated dashboard for it. You can add multiple locations — each gets its own review feed and analytics.",
+        a: "After signing in, go to your Home page and click 'Add Location'. Enter your business name, type, and Google Maps URL, and ReviewResponder will create a dedicated dashboard for it. You can add multiple locations — each gets its own review feed and analytics.",
       },
       {
-        q: "Do I need a Google Business Profile?",
-        a: "For the current version, reviews are seeded as mock data for demonstration. In the upcoming Google API phase, you'll connect your Google Business Profile account and real reviews will sync automatically.",
+        q: "How are reviews fetched?",
+        a: "Reviews are synced automatically from your provided Google Maps URL. You can also manually sync new reviews by clicking the 'Sync from Google Maps' button on your dashboard.",
       },
     ],
   },
   {
     category: "AI Responses",
     items: [
-      {
-        q: "How does the AI generate responses?",
-        a: "When you click 'Generate AI Response' on a review, ReviewResponder sends the review text, star rating, and your business type to Google Gemini. The AI crafts a tone-appropriate reply — warm and grateful for positive reviews, empathetic and solution-oriented for negative ones.",
-      },
       {
         q: "Can I edit the AI draft?",
         a: "Absolutely. Every AI draft shows an 'Edit' button. Click it to open an inline text editor where you can change any word, adjust the tone, or add personalised details. Your edits are saved to the draft.",
@@ -52,7 +48,7 @@ const FAQS = [
     items: [
       {
         q: "What do the review statuses mean?",
-        a: "'Needs Response' means the review has no reply yet. 'Draft Ready' means the AI has generated a response waiting for your review. 'Ignored' means you chose to skip the review.",
+        a: "'Needs Response' means the review has no reply yet. 'Draft Ready' means the AI has generated a response waiting for your review. 'Responded' means the response has been finalized and published. 'Ignored' means you chose to skip the review.",
       },
       {
         q: "Why are some reviews highlighted in red?",
@@ -62,6 +58,44 @@ const FAQS = [
         q: "Can I manage multiple business locations?",
         a: "Yes. Use the location switcher in the top navigation bar to switch between locations. Each location has its own review feed, stats, and analytics. You can add a new location any time from the Home page.",
       },
+      {
+        q: "Can I sort or filter my reviews?",
+        a: "Yes, you can use the sorting options on your dashboard to sort reviews by date (newest/oldest) or rating (highest/lowest). This helps you prioritize which reviews to respond to first.",
+      },
+    ],
+  },
+  {
+    category: "Deep Analysis",
+    items: [
+      {
+        q: "What is the 'Deep Analysis' feature?",
+        a: "Deep Analysis goes beyond standard metrics to provide a comprehensive, AI-driven breakdown of your reviews. It analyzes the text of your reviews to extract actionable business insights, identify recurring themes, and evaluate customer sentiment.",
+      },
+      {
+        q: "How does Topic Analysis work?",
+        a: "Topic Analysis automatically categorizes customer feedback into key areas (like Food, Service, Ambiance, or Value). It highlights what customers love and where there is room for improvement, complete with representative quotes from the actual reviews.",
+      },
+      {
+        q: "What does Sentiment Analysis tell me?",
+        a: "Sentiment Analysis evaluates the emotional tone of your reviews. It breaks down the feedback into Positive, Neutral, and Negative sentiments, helping you understand the overall mood of your customers at a glance.",
+      },
+      {
+        q: "What are Actionable Insights?",
+        a: "Actionable Insights are specific, data-backed recommendations generated from your reviews. If multiple customers mention slow service during lunch, the system will highlight this trend so you can address it directly.",
+      },
+    ],
+  },
+  {
+    category: "Notifications & Alerts",
+    items: [
+      {
+        q: "Will I get notified when I receive a bad review?",
+        a: "Yes. You can enable 'Negative Alerts' in your Notification Settings. Whenever a review with 1 or 2 stars is synced, the system will immediately send you an email alert so you can respond promptly.",
+      },
+      {
+        q: "Can I get a summary of my reviews?",
+        a: "Absolutely. You can enable 'Weekly Digests' to receive a scheduled email summarizing your review activity, including your average rating, total new reviews, and overall response rate. You can customize the day and time you receive this digest.",
+      },
     ],
   },
   {
@@ -69,11 +103,11 @@ const FAQS = [
     items: [
       {
         q: "What does the Analytics page show?",
-        a: "The Analytics page gives you a full breakdown: rating distribution (1–5★), review status breakdown, monthly review volume over the last 6 months, sentiment analysis (positive/neutral/negative), language breakdown (English/Hindi/Hinglish), and key insight callouts.",
+        a: "The Analytics page gives you a full breakdown: rating distribution (1–5★), review status breakdown, monthly review volume over the last 6 months, sentiment analysis (positive/neutral/negative), language breakdown, and key insight callouts.",
       },
       {
-        q: "How is 'Response Rate' calculated?",
-        a: "Response Rate = (number of 'Draft Ready' reviews ÷ total reviews) × 100. This shows what percentage of reviews you've drafted responses for.",
+        q: "How is the 'Response Rate' measured?",
+        a: "The Response Rate shows what percentage of your reviews have been successfully answered. It helps you track your engagement and ensure no customer feedback goes ignored.",
       },
     ],
   },
@@ -82,12 +116,13 @@ const FAQS = [
     items: [
       {
         q: "Is my review data secure?",
-        a: "Yes. All data is stored in Supabase with Row Level Security (RLS) enabled — each user can only access their own businesses and reviews. Authentication is handled by Supabase Auth with encrypted sessions.",
+        a: "Yes. All data is securely stored and isolated. You can only access your own businesses and reviews through an encrypted and authenticated session.",
       },
       {
-        q: "Can I post responses to Google?",
-        a: "The current version saves draft responses in your dashboard. You can copy the response and paste it manually in your Google Business Profile. Automatic posting to Google is planned for a future phase.",
+        q: "Are my finalized responses automatically posted to Google?",
+        a: "Yes, once you connect your Google Business Profile account. Until then, you can copy the finalized responses and paste them directly into your Google Business Profile.",
       },
+
     ],
   },
 ];

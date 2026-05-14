@@ -26,8 +26,8 @@ export default function Sidebar({ businesses }: SidebarProps) {
   const supportItems = [
     { name: "Add Location", href: `/dashboard/setup`, icon: "📍", appendBusiness: false },
     { name: "Notification Settings", href: `/dashboard/settings/notifications`, icon: "⚙️", appendBusiness: true },
-    { name: "FAQ", href: `/faq`, icon: "❓", appendBusiness: false },
-    { name: "Help & Support", href: `/help`, icon: "💬", appendBusiness: false },
+    { name: "FAQ", href: `/faq`, icon: "❓", appendBusiness: true },
+    { name: "Help & Support", href: `/help`, icon: "💬", appendBusiness: true },
   ];
 
   return (
