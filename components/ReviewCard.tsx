@@ -73,8 +73,10 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
   const isNegative = review.rating <= 2;
   const hasOwnerResponse = review.owner_response && review.owner_response.trim().length > 0;
 
+  const initialStatus = hasOwnerResponse && review.status === "new" ? "published" : review.status;
+
   // ── Local UI state ──────────────────────────────────────────────────────
-  const [status,     setStatus]     = useState(review.status);
+  const [status,     setStatus]     = useState(initialStatus);
   const [draft,      setDraft]      = useState<string | null>(review.draft_response);
 
   // Editing state — when true, draft becomes a textarea

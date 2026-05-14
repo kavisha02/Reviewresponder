@@ -108,7 +108,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     ? (all.reduce((s, r) => s + r.rating, 0) / total).toFixed(1)
     : "—";
 
-  const responded     = all.filter((r) => r.status === "draft").length;
+  const responded     = all.filter((r) => r.status === "published").length;
   const responseRate  = total > 0 ? Math.round((responded / total) * 100) : 0;
 
   const thirtyAgo     = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

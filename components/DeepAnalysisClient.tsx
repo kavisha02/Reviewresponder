@@ -113,6 +113,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       return;
     }
 
+    const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
+    if (textReviewsCount === 0) {
+      setError("No reviews with text available to do analysis.");
+      return;
+    }
+
     setLoadingCategory(true);
     setError("");
     try {
@@ -144,6 +150,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
     // Check if analysis is fresh (no new reviews)
     if (sentimentAnalysis) {
       setError("Analysis is up to date. No new reviews to analyze.");
+      return;
+    }
+
+    const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
+    if (textReviewsCount === 0) {
+      setError("No reviews with text available to do analysis.");
       return;
     }
 
@@ -181,6 +193,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       return;
     }
 
+    const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
+    if (textReviewsCount === 0) {
+      setError("No reviews with text available to do analysis.");
+      return;
+    }
+
     setLoadingInsights(true);
     setError("");
     try {
@@ -215,6 +233,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       return;
     }
 
+    const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
+    if (textReviewsCount === 0) {
+      setError("No reviews with text available to do analysis.");
+      return;
+    }
+
     setLoadingSummary(true);
     setError("");
     try {
@@ -240,12 +264,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
       setLoadingSummary(false);
     }
   }
-      setLoadingSummary(false);
-    } catch (err) {
-      setError("An error occurred while generating summary");
-      setLoadingSummary(false);
-    }
-  }
+
 
   return (
     <div className="space-y-8">
@@ -294,7 +313,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
               <div>
                 <p className="text-slate-400 text-xs">Response Rate</p>
                 <p className="text-2xl font-bold text-emerald-400">
-                  {totalReviews > 0 ? Math.round((reviews.filter(r => r.status === "draft").length / totalReviews) * 100) : 0}%
+                  {totalReviews > 0 ? Math.round((reviews.filter(r => r.status === "published").length / totalReviews) * 100) : 0}%
                 </p>
               </div>
             </div>

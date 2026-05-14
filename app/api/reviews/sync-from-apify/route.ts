@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
       owner_response: item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null,
       owner_response_date: item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null,
-      status: "new",
+      status: item.ownerResponse != null && item.ownerResponse.trim().length > 0 ? "published" : "new",
     }));
 
     // Check for duplicates before inserting
@@ -100,10 +100,28 @@ export async function POST(request: Request) {
 
     const existingIds = new Set(existingReviews?.map((r) => r.external_id) || []);
     const newReviews = reviewsToInsert.filter((r) => !existingIds.has(r.external_id));
+    
+    // Find existing reviews that have an owner response now
+    const existingReviewsData = reviewsToInsert.filter((r) => existingIds.has(r.external_id) && r.owner_response);
+
+    // Update existing reviews with their new owner response if present
+    if (existingReviewsData.length > 0) {
+      for (const review of existingReviewsData) {
+        await supabase
+          .from("reviews")
+          .update({
+            owner_response: review.owner_response,
+            owner_response_date: review.owner_response_date,
+            status: "published"
+          })
+          .eq("business_id", businessId)
+          .eq("external_id", review.external_id);
+      }
+    }
 
     if (newReviews.length === 0) {
       return NextResponse.json(
-        { success: true, count: 0, message: "All reviews already synced" },
+        { success: true, count: 0, message: "All reviews already synced, but updated existing ones if they had new owner responses." },
         { status: 200 }
       );
     }

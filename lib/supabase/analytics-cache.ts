@@ -44,11 +44,20 @@ export async function saveCachedAnalysis(
 ) {
   try {
     const supabase = createClient();
+    
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error("No authenticated user found for cache save");
+      return null;
+    }
+
     const { data, error } = await supabase
       .from("analytics_cache")
       .upsert(
         {
           business_id: businessId,
+          user_id: user.id,
           analysis_type: analysisType,
           results,
           review_count: reviewCount,
