@@ -50,8 +50,8 @@ export default function SignUpPage() {
     }
 
     if (data.session) {
-      // Email confirmation is OFF — user is logged in immediately, go to dashboard
-      router.push("/dashboard");
+      // Email confirmation is OFF — user is logged in immediately, go to home
+      router.push("/home");
       router.refresh();
       return;
     }

@@ -60,14 +60,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect logged-in users away from login/signup to the dashboard
+  // Redirect logged-in users away from login/signup to the home page
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth/login") ||
                      request.nextUrl.pathname.startsWith("/auth/signup");
 
   if (isAuthPage && user) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    return NextResponse.redirect(dashboardUrl);
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/home";
+    return NextResponse.redirect(homeUrl);
   }
 
   return supabaseResponse;
