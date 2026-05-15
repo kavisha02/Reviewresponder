@@ -72,6 +72,7 @@ function formatDate(dateStr: string | null): string {
 export default function ReviewCard({ review, onStatusChange }: { review: Review; onStatusChange?: (newStatus: string) => void }) {
   const isNegative = review.rating <= 2;
   const hasOwnerResponse = review.owner_response && review.owner_response.trim().length > 0;
+  const hasPublishedResponse = review.published_response && review.published_response.trim().length > 0;
 
   const initialStatus = hasOwnerResponse && review.status === "new" ? "published" : review.status;
 
@@ -159,11 +160,12 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
   }
 
   return (
-    <div className={`relative border rounded-2xl overflow-hidden ${
-      isNegative && status === "new"
-        ? "card-glow-negative border-red-700/40"
-        : "card-glow bg-slate-800/70 border-slate-700"
-    }`}>
+    <>
+      <div className={`relative border rounded-2xl overflow-hidden ${
+        isNegative && status === "new"
+          ? "card-glow-negative border-red-700/40"
+          : "card-glow bg-slate-800/70 border-slate-700"
+      }`}>
 
       {/* Left accent bar */}
       {isNegative && status === "new" && (
@@ -208,16 +210,24 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
           )}
         </p>
 
-        {/* ── OWNER RESPONSE: Show if exists ── */}
-        {hasOwnerResponse && (
+        {/* ── SAVED / OWNER RESPONSE ── */}
+        {(hasOwnerResponse || hasPublishedResponse || status === "published") && (
           <div className="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-emerald-400 text-xs font-semibold uppercase tracking-wide">
-                Owner Response
+                {hasOwnerResponse ? "Owner Response" : "Saved Response"}
               </span>
-              <span className="text-slate-500 text-xs">· {formatDate(review.owner_response_date)}</span>
+              {(hasOwnerResponse || review.published_at) && (
+                <span className="text-slate-500 text-xs">
+                  · {formatDate(hasOwnerResponse ? review.owner_response_date : review.published_at)}
+                </span>
+              )}
             </div>
-            <p className="text-slate-300 text-sm leading-relaxed">{review.owner_response}</p>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              {hasOwnerResponse 
+                ? review.owner_response 
+                : (hasPublishedResponse ? review.published_response : draft)}
+            </p>
           </div>
         )}
 
@@ -333,11 +343,13 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
         )}
       </div>
 
+      </div>
+
       {/* ── Tone Selection Modal ── */}
       {showToneModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
-            <h2 className="text-lg font-bold text-white mb-4">Choose Response Tone</h2>
+        <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl relative">
+            <h2 className="text-xl font-bold text-white mb-2">Choose Response Tone</h2>
             <p className="text-slate-400 text-sm mb-6">
               How would you like the AI to respond to this review?
             </p>
@@ -365,49 +377,57 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
               ].map((tone) => (
                 <label
                   key={tone.id}
-                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                  className={`flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200 ${
                     selectedTone === tone.id
-                      ? "bg-indigo-950/50 border-indigo-600 ring-2 ring-indigo-500/30"
-                      : "bg-slate-900/50 border-slate-700 hover:border-slate-600"
+                      ? "bg-indigo-900/20 border-indigo-500 ring-2 ring-indigo-500/50 shadow-lg shadow-indigo-900/20"
+                      : "bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:bg-slate-800"
                   }`}
                 >
+                  <div className={`mt-1 flex items-center justify-center w-5 h-5 rounded-full border-2 transition-colors ${
+                    selectedTone === tone.id ? "border-indigo-500 bg-indigo-500" : "border-slate-500 bg-slate-800"
+                  }`}>
+                    {selectedTone === tone.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                  
+                  {/* Hidden actual radio input */}
                   <input
                     type="radio"
-                    name="tone"
+                    name={`tone-${review.id}`}
                     value={tone.id}
                     checked={selectedTone === tone.id}
                     onChange={(e) => setSelectedTone(e.target.value as "professional" | "friendly" | "casual")}
-                    className="mt-1 cursor-pointer"
+                    className="sr-only"
                   />
+                  
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{tone.icon}</span>
-                      <span className="font-medium text-white">{tone.label}</span>
+                      <span className="text-xl">{tone.icon}</span>
+                      <span className="font-semibold text-white">{tone.label}</span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">{tone.description}</p>
+                    <p className="text-xs text-slate-400 mt-1.5">{tone.description}</p>
                   </div>
                 </label>
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 mt-8">
               <button
                 onClick={() => setShowToneModal(false)}
-                className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                className="flex-1 border border-slate-600 hover:border-slate-400 hover:bg-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleGenerate(selectedTone)}
                 disabled={generating}
-                className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg shadow-indigo-600/20 transition-all duration-200"
               >
-                {generating ? "Generating…" : "Generate"}
+                {generating ? "Generating…" : "Generate AI Response"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

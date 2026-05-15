@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { useState, useEffect } from "react";
 import { Business, Review } from "@/lib/types";
+
+// Dynamic import for html2pdf since it requires the window object
+let html2pdf: any;
+if (typeof window !== "undefined") {
+  html2pdf = require("html2pdf.js");
+}
 
 interface ReportData {
   business: Business;
@@ -61,6 +65,11 @@ export default function ExportReportClient({ reportData }: Props) {
   const [format, setFormat] = useState<"pdf" | "word">("pdf");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleSection = (id: string) => {
     const newSet = new Set(selectedSections);
@@ -80,416 +89,29 @@ export default function ExportReportClient({ reportData }: Props) {
     setSelectedSections(new Set());
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
+    setLoading(true);
+    setError("");
+    
     try {
-      const doc = new jsPDF();
-      let yPos = 20;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
-      const maxWidth = doc.internal.pageSize.getWidth() - 2 * margin;
+      const element = document.getElementById("pdf-report-content");
+      if (!element) throw new Error("Report content not found");
 
-      const addPage = () => {
-        doc.addPage();
-        yPos = margin;
+      const opt = {
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `${reportData.business.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true }, 
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      const checkPageBreak = (height: number) => {
-        if (yPos + height > pageHeight - margin) {
-          addPage();
-        }
-      };
-
-      // Header
-      doc.setFontSize(20);
-      doc.setTextColor(79, 70, 229); // indigo
-      doc.text("Review Report", margin, yPos);
-      yPos += 10;
-
-      doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139); // slate
-      doc.text(`Generated on ${new Date().toLocaleDateString()}`, margin, yPos);
-      yPos += 8;
-
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, yPos, margin + maxWidth, yPos);
-      yPos += 8;
-
-      // Business Overview
-      if (selectedSections.has("overview")) {
-        checkPageBreak(30);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Business Overview", margin, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(50, 50, 50);
-        doc.text(`Business: ${reportData.business.name}`, margin + 5, yPos);
-        yPos += 6;
-        doc.text(`Type: ${reportData.business.business_type || "Not specified"}`, margin + 5, yPos);
-        yPos += 8;
-      }
-
-      // Key Metrics
-      if (selectedSections.has("metrics")) {
-        checkPageBreak(50);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Key Metrics", margin, yPos);
-        yPos += 8;
-
-        const metricsTable = [
-          ["Metric", "Value"],
-          ["Total Reviews", reportData.metrics.total.toString()],
-          ["Average Rating", `${reportData.metrics.avgRating}★`],
-          ["Response Rate", `${reportData.metrics.responseRate}%`],
-          ["Last 30 Days", reportData.metrics.last30Count.toString()],
-          ["Needs Attention", reportData.metrics.needsAttention.toString()],
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [metricsTable[0]],
-          body: metricsTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }
-
-      // Rating Distribution
-      if (selectedSections.has("rating")) {
-        checkPageBreak(50);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Rating Distribution", margin, yPos);
-        yPos += 8;
-
-        const ratingTable = [
-          ["Rating", "Count", "Percentage"],
-          ...reportData.metrics.ratingCounts.map((r) => [
-            `${"★".repeat(r.star)}`,
-            r.count.toString(),
-            reportData.metrics.total > 0
-              ? `${Math.round((r.count / reportData.metrics.total) * 100)}%`
-              : "0%",
-          ]),
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [ratingTable[0]],
-          body: ratingTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }
-
-      // Monthly Review Volume
-      if (selectedSections.has("monthly")) {
-        checkPageBreak(50);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Monthly Review Volume (Last 6 Months)", margin, yPos);
-        yPos += 8;
-
-        const monthlyTable = [
-          ["Month", "Count", "Avg Rating"],
-          ...reportData.metrics.monthlyData.map((m) => [
-            m.label,
-            m.count.toString(),
-            m.avgRating > 0 ? m.avgRating.toFixed(1) : "—",
-          ]),
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [monthlyTable[0]],
-          body: monthlyTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }
-
-      // Review Status Breakdown
-      if (selectedSections.has("status")) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Review Status Breakdown", margin, yPos);
-        yPos += 8;
-
-        const statusTable = [
-          ["Status", "Count"],
-          ...reportData.metrics.statusData.map((s) => [s.label, s.count.toString()]),
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [statusTable[0]],
-          body: statusTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }
-
-      // Sentiment Breakdown
-      if (selectedSections.has("sentiment")) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Sentiment Breakdown", margin, yPos);
-        yPos += 8;
-
-        const sentimentTable = [
-          ["Sentiment", "Count", "Percentage"],
-          [
-            "Positive (4-5★)",
-            reportData.metrics.sentPositive.toString(),
-            reportData.metrics.total > 0
-              ? `${Math.round((reportData.metrics.sentPositive / reportData.metrics.total) * 100)}%`
-              : "0%",
-          ],
-          [
-            "Mixed (3★)",
-            reportData.metrics.sentNeutral.toString(),
-            reportData.metrics.total > 0
-              ? `${Math.round((reportData.metrics.sentNeutral / reportData.metrics.total) * 100)}%`
-              : "0%",
-          ],
-          [
-            "Negative (1-2★)",
-            reportData.metrics.sentNegative.toString(),
-            reportData.metrics.total > 0
-              ? `${Math.round((reportData.metrics.sentNegative / reportData.metrics.total) * 100)}%`
-              : "0%",
-          ],
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [sentimentTable[0]],
-          body: sentimentTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }
-
-      // Language Distribution
-      if (selectedSections.has("language")) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Language Distribution", margin, yPos);
-        yPos += 8;
-
-        const langTable = [
-          ["Language", "Count"],
-          ["English", reportData.metrics.langCounts.english.toString()],
-          ["Hindi", reportData.metrics.langCounts.hindi.toString()],
-          ["Hinglish", reportData.metrics.langCounts.hinglish.toString()],
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [langTable[0]],
-          body: langTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }
-
-      // AI Location Summary
-      if (selectedSections.has("summary") && reportData.analyses.summary) {
-        checkPageBreak(30);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("AI Location Summary", margin, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(50, 50, 50);
-        const summaryText = reportData.analyses.summary as string;
-        const wrappedSummary = doc.splitTextToSize(summaryText, maxWidth - 10);
-        doc.text(wrappedSummary, margin + 5, yPos);
-        yPos += wrappedSummary.length * 5 + 8;
-      }
-
-      // AI Category Analysis
-      if (selectedSections.has("category") && reportData.analyses.category) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("AI Category Analysis", margin, yPos);
-        yPos += 8;
-
-        const categoryData = reportData.analyses.category as any;
-        if (categoryData.topics && Array.isArray(categoryData.topics)) {
-          const topicsTable = [
-            ["Topic", "Sentiment", "Mentions"],
-            ...categoryData.topics.slice(0, 10).map((t: any) => [
-              t.topic,
-              t.sentiment,
-              t.mentions.toString(),
-            ]),
-          ];
-
-          autoTable(doc, {
-            startY: yPos,
-            head: [topicsTable[0]],
-            body: topicsTable.slice(1),
-            margin: margin,
-            theme: "grid",
-            headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-            bodyStyles: { textColor: [0, 0, 0] },
-            alternateRowStyles: { fillColor: [245, 245, 245] },
-            columnStyles: { 0: { cellWidth: 80 } },
-          });
-
-          yPos = (doc as any).lastAutoTable.finalY + 8;
-        }
-      }
-
-      // AI Actionable Insights
-      if (selectedSections.has("insights") && reportData.analyses.insights) {
-        checkPageBreak(50);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("AI Actionable Insights", margin, yPos);
-        yPos += 8;
-
-        const insightsData = reportData.analyses.insights as any;
-        if (Array.isArray(insightsData)) {
-          insightsData.slice(0, 5).forEach((insight: any, idx: number) => {
-            checkPageBreak(20);
-            doc.setFontSize(11);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`${idx + 1}. ${insight.insight}`, margin + 5, yPos);
-            yPos += 6;
-
-            doc.setFontSize(9);
-            doc.setTextColor(80, 80, 80);
-            doc.text(`Impact: ${insight.impact}`, margin + 10, yPos);
-            yPos += 5;
-            doc.text(`Action: ${insight.recommendation}`, margin + 10, yPos);
-            yPos += 8;
-          });
-        }
-      }
-
-      // AI Sentiment Insights
-      if (selectedSections.has("sentimentInsights") && reportData.analyses.sentiment) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("AI Sentiment Insights", margin, yPos);
-        yPos += 8;
-
-        const sentimentData = reportData.analyses.sentiment as any;
-        ["positive", "mixed", "negative"].forEach((key) => {
-          checkPageBreak(15);
-          doc.setFontSize(11);
-          doc.setTextColor(0, 0, 0);
-          doc.text(`${key.charAt(0).toUpperCase() + key.slice(1)}:`, margin + 5, yPos);
-          yPos += 5;
-
-          doc.setFontSize(9);
-          doc.setTextColor(50, 50, 50);
-          const text = sentimentData[key] || "No data";
-          const wrapped = doc.splitTextToSize(text, maxWidth - 15);
-          doc.text(wrapped, margin + 10, yPos);
-          yPos += wrapped.length * 4 + 5;
-        });
-      }
-
-      // Top Reviews
-      if (selectedSections.has("topReviews") && reportData.metrics.topReviews.length > 0) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Top Reviews", margin, yPos);
-        yPos += 8;
-
-        reportData.metrics.topReviews.slice(0, 5).forEach((review, idx) => {
-          checkPageBreak(25);
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
-          doc.text(`${idx + 1}. ${review.author_name || "Anonymous"} - ${"★".repeat(review.rating || 0)}`, margin + 5, yPos);
-          yPos += 5;
-
-          doc.setFontSize(9);
-          doc.setTextColor(80, 80, 80);
-          const reviewText = review.review_text || "(No text)";
-          const wrapped = doc.splitTextToSize(reviewText, maxWidth - 15);
-          doc.text(wrapped, margin + 10, yPos);
-          yPos += wrapped.length * 4 + 5;
-        });
-      }
-
-      // Response Log
-      if (selectedSections.has("responses") && reportData.metrics.publishedReviews.length > 0) {
-        checkPageBreak(40);
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Response Log", margin, yPos);
-        yPos += 8;
-
-        const responseTable = [
-          ["Author", "Rating", "Response"],
-          ...reportData.metrics.publishedReviews.slice(0, 10).map((r) => [
-            r.author_name || "Anonymous",
-            `${r.rating}★`,
-            (r.published_response || "").substring(0, 50) + "...",
-          ]),
-        ];
-
-        autoTable(doc, {
-          startY: yPos,
-          head: [responseTable[0]],
-          body: responseTable.slice(1),
-          margin: margin,
-          theme: "grid",
-          headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
-          bodyStyles: { textColor: [0, 0, 0] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-          columnStyles: { 2: { cellWidth: 80 } },
-        });
-      }
-
-      // Download
-      doc.save(`${reportData.business.name}-report.pdf`);
+      await html2pdf().set(opt).from(element).save();
     } catch (err) {
       console.error("PDF generation error:", err);
       setError("Failed to generate PDF");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -546,7 +168,303 @@ export default function ExportReportClient({ reportData }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Section Selection */}
+      {/* Hidden DOM element for html2pdf to capture. 
+          Use explicit inline styles for spacing, borders, colors, and layout to ensure perfect rendering. */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '0', pointerEvents: 'none' }}>
+        <div id="pdf-report-content" style={{ backgroundColor: '#ffffff', color: '#000000', width: '700px', padding: '32px', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: '14px', lineHeight: '1.6' }}>
+          
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#4f46e5', margin: '0 0 8px 0', textAlign: 'center' }}>Review Report</h1>
+          <p style={{ color: '#6b7280', margin: '0 0 24px 0', paddingBottom: '16px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Generated on {mounted ? new Date().toLocaleDateString() : ""}</p>
+          
+          {selectedSections.has("overview") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Business Overview</h2>
+              <div style={{ paddingLeft: '8px' }}>
+                <p style={{ margin: '0 0 4px 0' }}><strong>Business:</strong> {reportData.business.name}</p>
+                <p style={{ margin: '0' }}><strong>Type:</strong> {reportData.business.business_type || "Not specified"}</p>
+              </div>
+            </div>
+          )}
+
+          {selectedSections.has("metrics") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Key Metrics</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Metric</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>Total Reviews</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.total}</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#f9fafb', pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>Average Rating</td>
+                    <td style={{ padding: '8px', fontWeight: 'bold', color: '#eab308', border: '1px solid #d1d5db' }}>{reportData.metrics.avgRating}★</td>
+                  </tr>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>Response Rate</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.responseRate}%</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#f9fafb', pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>Last 30 Days</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.last30Count}</td>
+                  </tr>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>Needs Attention</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.needsAttention}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("rating") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Rating Distribution</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Rating</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Count</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.metrics.ratingCounts.map((r, i) => (
+                    <tr key={r.star} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
+                      <td style={{ padding: '8px', color: '#eab308', border: '1px solid #d1d5db' }}>{"★".repeat(r.star)}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{r.count}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>
+                        {reportData.metrics.total > 0 ? Math.round((r.count / reportData.metrics.total) * 100) : 0}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("monthly") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Monthly Review Volume</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Month</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Count</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Avg Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.metrics.monthlyData.map((m, i) => (
+                    <tr key={m.label} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{m.label}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{m.count}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{m.avgRating > 0 ? m.avgRating.toFixed(1) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("status") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Review Status Breakdown</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Status</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.metrics.statusData.map((s, i) => (
+                    <tr key={s.label} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{s.label}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{s.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("sentiment") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Sentiment Breakdown</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Sentiment</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Count</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>Positive (4-5★)</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.sentPositive}</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.total > 0 ? Math.round((reportData.metrics.sentPositive / reportData.metrics.total) * 100) : 0}%</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#f9fafb', pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>Mixed (3★)</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.sentNeutral}</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.total > 0 ? Math.round((reportData.metrics.sentNeutral / reportData.metrics.total) * 100) : 0}%</td>
+                  </tr>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>Negative (1-2★)</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.sentNegative}</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.total > 0 ? Math.round((reportData.metrics.sentNegative / reportData.metrics.total) * 100) : 0}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("language") && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>Language Distribution</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Language</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>English</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.langCounts.english}</td>
+                  </tr>
+                  <tr style={{ backgroundColor: '#f9fafb', pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>Hindi</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.langCounts.hindi}</td>
+                  </tr>
+                  <tr style={{ pageBreakInside: 'avoid' }}>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>Hinglish</td>
+                    <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{reportData.metrics.langCounts.hinglish}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("summary") && reportData.analyses.summary && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Location Summary</h2>
+              <p style={{ color: '#374151', whiteSpace: 'pre-wrap', margin: '0' }}>{reportData.analyses.summary as string}</p>
+            </div>
+          )}
+
+          {selectedSections.has("category") && reportData.analyses.category && (
+            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Category Analysis</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Topic</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Sentiment</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Mentions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reportData.analyses.category as any).topics?.slice(0, 10).map((t: any, i: number) => (
+                    <tr key={t.topic} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
+                      <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>{t.topic}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{t.sentiment}</td>
+                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{t.mentions}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {selectedSections.has("insights") && reportData.analyses.insights && (
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>AI Actionable Insights</h2>
+              <div>
+                {(reportData.analyses.insights as any).slice(0, 5).map((insight: any, i: number) => (
+                  <div key={i} style={{ padding: '16px', border: '1px solid #e0e7ff', borderRadius: '8px', backgroundColor: '#eef2ff', marginBottom: '16px', pageBreakInside: 'avoid' }}>
+                    <h3 style={{ fontWeight: '600', color: '#312e81', margin: '0 0 8px 0' }}>{i + 1}. {insight.insight}</h3>
+                    <p style={{ color: '#4b5563', margin: '0 0 8px 0' }}><strong style={{ color: '#1f2937' }}>Impact:</strong> {insight.impact}</p>
+                    <p style={{ color: '#4b5563', margin: '0' }}><strong style={{ color: '#1f2937' }}>Action:</strong> {insight.recommendation}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedSections.has("sentimentInsights") && reportData.analyses.sentiment && (
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>AI Sentiment Insights</h2>
+              <div>
+                {["positive", "mixed", "negative"].map((key) => {
+                  const data = (reportData.analyses.sentiment as any)[key];
+                  if (!data) return null;
+                  return (
+                    <div key={key} style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
+                      <h3 style={{ fontWeight: '600', textTransform: 'capitalize', color: '#1f2937', margin: '0 0 8px 0' }}>{key} Feedback:</h3>
+                      <p style={{ padding: '12px', borderRadius: '4px', border: '1px solid #e5e7eb', color: '#374151', backgroundColor: '#f9fafb', margin: '0' }}>{data}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {selectedSections.has("topReviews") && reportData.metrics.topReviews.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>Top Reviews</h2>
+              <div>
+                {reportData.metrics.topReviews.slice(0, 5).map((r, i) => (
+                  <div key={r.id || i} style={{ border: '1px solid #e5e7eb', padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', marginBottom: '16px', pageBreakInside: 'avoid' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontWeight: '600', color: '#111827' }}>{r.author_name || "Anonymous"}</span>
+                      <span style={{ color: '#eab308' }}>{"★".repeat(r.rating || 0)}</span>
+                    </div>
+                    <p style={{ fontStyle: 'italic', color: '#374151', margin: '0' }}>"{r.review_text || "No text"}"</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedSections.has("responses") && reportData.metrics.publishedReviews.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>Response Log</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', tableLayout: 'fixed', pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db', width: '25%' }}>Author</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db', width: '15%' }}>Rating</th>
+                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db', width: '60%' }}>Response</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.metrics.publishedReviews.slice(0, 10).map((r, i) => (
+                    <tr key={r.id || i} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'top', border: '1px solid #d1d5db' }}>{r.author_name || "Anonymous"}</td>
+                      <td style={{ padding: '8px', verticalAlign: 'top', color: '#eab308', border: '1px solid #d1d5db' }}>{"★".repeat(r.rating || 0)}</td>
+                      <td style={{ padding: '8px', verticalAlign: 'top', color: '#374151', fontSize: '12px', whiteSpace: 'pre-wrap', border: '1px solid #d1d5db' }}>
+                        {(r.published_response || "").substring(0, 150)}{r.published_response && r.published_response.length > 150 ? "..." : ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* UI Selection */}
       <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Select Sections to Include</h2>
