@@ -106,6 +106,17 @@ export default async function HomePage() {
       border:      "hover:border-purple-700/60",
     },
     {
+      href:        hasBusinesses ? `/dashboard/export?business=${firstBizId}` : "/dashboard/setup",
+      icon:        "📄",
+      iconBg:      "from-slate-500 to-zinc-600",
+      title:       "Export Report",
+      description: "Download a full PDF or Word report of your reviews, analytics, and AI insights.",
+      cta:         "Export Report →",
+      badge:       null,
+      badgeColor:  "",
+      border:      "hover:border-slate-700/60",
+    },
+    {
       href:        hasBusinesses ? `/dashboard/settings/notifications?business=${firstBizId}` : "/dashboard/setup",
       icon:        "🔔",
       iconBg:      "from-cyan-500 to-blue-600",

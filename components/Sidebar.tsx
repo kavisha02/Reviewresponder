@@ -21,6 +21,7 @@ export default function Sidebar({ businesses }: SidebarProps) {
     { name: "Reviews Dashboard", href: `/dashboard`, icon: "🏠" },
     { name: "Analytics", href: `/dashboard/analytics`, icon: "📊" },
     { name: "Deep Analysis", href: `/dashboard/analyse-deeply`, icon: "🧠" },
+    { name: "Export Report", href: `/dashboard/export`, icon: "📄" },
   ];
 
   const supportItems = [
