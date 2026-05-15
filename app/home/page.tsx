@@ -106,6 +106,17 @@ export default async function HomePage() {
       border:      "hover:border-purple-700/60",
     },
     {
+      href:        hasBusinesses ? `/dashboard/competitors/head-to-head?business=${firstBizId}` : "/dashboard/setup",
+      icon:        "🏆",
+      iconBg:      "from-amber-500 to-orange-600",
+      title:       "Reputation Scorecard",
+      description: "Compare your business against competitors — see ratings, sentiment, topics, and competitive insights.",
+      cta:         "View Scorecard →",
+      badge:       null,
+      badgeColor:  "",
+      border:      "hover:border-amber-700/60",
+    },
+    {
       href:        hasBusinesses ? `/dashboard/export?business=${firstBizId}` : "/dashboard/setup",
       icon:        "📄",
       iconBg:      "from-slate-500 to-zinc-600",
