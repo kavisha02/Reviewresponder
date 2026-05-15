@@ -1,20 +1,27 @@
 /**
- * API Route: GET /api/competitors/:businessId
+ * API Route: GET /api/competitors/list?businessId=xxx
  *
  * Fetches all competitors for a business.
  *
+ * Query params: businessId (required)
  * Response: { competitors: CompetitorBenchmark[] }
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ businessId: string }> }
-) {
+export async function GET(request: Request) {
   try {
-    const { businessId } = await params;
+    const { searchParams } = new URL(request.url);
+    const businessId = searchParams.get("businessId");
+
+    if (!businessId) {
+      return NextResponse.json(
+        { error: "businessId query parameter is required" },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
 
     // Auth check

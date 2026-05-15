@@ -36,7 +36,7 @@ export default function HeadToHeadPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/competitors/${businessId}/list`);
+      const res = await fetch(`/api/competitors/list?businessId=${businessId}`);
       const result = await res.json();
 
       if (!res.ok) {
