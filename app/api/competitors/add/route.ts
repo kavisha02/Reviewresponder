@@ -2,7 +2,7 @@
  * API Route: POST /api/competitors/add
  *
  * Adds a new competitor to track for a business.
- * Validates tier limits and fetches initial competitor data.
+ * Validates tier limits and fetches initial competitor data using Apify.
  *
  * Request body: { businessId: string, competitorName: string, googleMapsUrl?: string, maxReviews?: number }
  * Response: { success: boolean, competitorId?: string, error?: string }
@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkCompetitorLimit } from "@/lib/competitors/tier-check";
 import { fetchPlaceDetails, extractPlaceIdFromUrl, searchGooglePlace } from "@/lib/competitors/google-places";
+import { fetchCompetitorReviewsFromApify, transformApifyReviewToCompetitorReview } from "@/lib/competitors/apify-reviews";
 import { extractTopicsFromReviews, analyzeSingleReviewSentiment } from "@/lib/competitors/gemini-analysis";
 import { CompetitorReview } from "@/lib/types";
 
@@ -72,7 +73,6 @@ export async function POST(request: Request) {
         console.log(`Fetched place details:`, {
           name: placeDetails?.name,
           rating: placeDetails?.rating,
-          reviewCount: placeDetails?.reviews?.length || 0,
         });
       } catch (error) {
         console.error("Error fetching place details from URL:", error);
@@ -89,7 +89,6 @@ export async function POST(request: Request) {
           console.log(`Found place:`, {
             name: placeDetails.name,
             rating: placeDetails.rating,
-            reviewCount: placeDetails.reviews?.length || 0,
           });
         }
       } catch (error) {
@@ -125,136 +124,125 @@ export async function POST(request: Request) {
 
     console.log(`Created competitor benchmark: ${competitor.id}`);
 
-    // Fetch and store reviews if we have place details
-    if (placeDetails && placeDetails.reviews && placeDetails.reviews.length > 0) {
+    // Fetch reviews using Apify if we have a Google Maps URL
+    if (googleMapsUrl) {
       try {
-        console.log(`Processing ${placeDetails.reviews.length} reviews from Google Places API`);
+        console.log(`Fetching reviews from Apify for URL: ${googleMapsUrl}`);
+        const apifyReviews = await fetchCompetitorReviewsFromApify(googleMapsUrl, maxReviews);
 
-        // Transform reviews to our schema (limit to maxReviews)
-        const reviewsToInsert: Partial<CompetitorReview>[] = [];
-        const reviewsToAnalyze: any[] = [];
+        if (apifyReviews && apifyReviews.length > 0) {
+          console.log(`Apify returned ${apifyReviews.length} reviews`);
 
-        for (const review of placeDetails.reviews.slice(0, Math.min(maxReviews, placeDetails.reviews.length))) {
-          reviewsToAnalyze.push(review);
-          reviewsToInsert.push({
-            competitor_benchmark_id: competitor.id,
-            external_id: `${placeId}_${review.time}`,
-            author_name: review.author_name,
-            rating: review.rating,
-            review_text: review.text,
-            review_date: new Date(review.time * 1000).toISOString(),
-            sentiment: null,
-            topics: null,
-          });
-        }
+          // Transform reviews to our schema
+          const reviewsToInsert: Partial<CompetitorReview>[] = apifyReviews.map((review) =>
+            transformApifyReviewToCompetitorReview(review, competitor.id, placeId)
+          );
 
-        // Insert reviews first (without sentiment/topics)
-        if (reviewsToInsert.length > 0) {
-          console.log(`Inserting ${reviewsToInsert.length} reviews into database`);
-          const { error: insertError } = await supabase
-            .from("competitor_reviews")
-            .insert(reviewsToInsert);
+          // Insert reviews first (without sentiment/topics)
+          if (reviewsToInsert.length > 0) {
+            console.log(`Inserting ${reviewsToInsert.length} reviews into database`);
+            const { error: insertError } = await supabase
+              .from("competitor_reviews")
+              .insert(reviewsToInsert);
 
-          if (insertError) {
-            console.error("Error inserting reviews:", insertError);
-          } else {
-            console.log(`Successfully inserted ${reviewsToInsert.length} reviews`);
+            if (insertError) {
+              console.error("Error inserting reviews:", insertError);
+            } else {
+              console.log(`Successfully inserted ${reviewsToInsert.length} reviews`);
 
-            // Analyze sentiment for each review
-            console.log(`Analyzing sentiment for ${reviewsToAnalyze.length} reviews...`);
-            const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
+              // Analyze sentiment for each review
+              console.log(`Analyzing sentiment for ${apifyReviews.length} reviews...`);
+              const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
 
-            for (const review of reviewsToAnalyze) {
-              try {
-                const sentiment = await analyzeSingleReviewSentiment(review.text);
-                reviewsWithSentiment.push({
-                  external_id: `${placeId}_${review.time}`,
-                  sentiment: sentiment.sentiment,
-                  topics: sentiment.topics,
-                });
-              } catch (error) {
-                console.error("Error analyzing review sentiment:", error);
-                reviewsWithSentiment.push({
-                  external_id: `${placeId}_${review.time}`,
-                  sentiment: "mixed",
-                  topics: [],
-                });
+              for (const review of apifyReviews) {
+                try {
+                  const sentiment = await analyzeSingleReviewSentiment(review.text || "");
+                  reviewsWithSentiment.push({
+                    external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+                    sentiment: sentiment.sentiment,
+                    topics: sentiment.topics,
+                  });
+                } catch (error) {
+                  console.error("Error analyzing review sentiment:", error);
+                  reviewsWithSentiment.push({
+                    external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+                    sentiment: "mixed",
+                    topics: [],
+                  });
+                }
               }
-            }
 
-            // Update reviews with sentiment data
-            console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
-            for (const review of reviewsWithSentiment) {
-              await supabase
-                .from("competitor_reviews")
-                .update({
-                  sentiment: review.sentiment,
-                  topics: review.topics,
-                })
-                .eq("competitor_benchmark_id", competitor.id)
-                .eq("external_id", review.external_id);
-            }
-
-            // Extract topics from all reviews
-            try {
-              console.log(`Extracting topics from reviews...`);
-              const topicAnalysis = await extractTopicsFromReviews(
-                reviewsToInsert as CompetitorReview[]
-              );
-
-              // Store topics
-              if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
-                console.log(`Found ${topicAnalysis.topics.length} topics`);
-                const topicsToInsert = topicAnalysis.topics.map((t) => ({
-                  competitor_benchmark_id: competitor.id,
-                  topic: t.topic,
-                  mention_count: t.mention_count,
-                  sentiment_score: t.sentiment_score,
-                }));
-
+              // Update reviews with sentiment data
+              console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
+              for (const review of reviewsWithSentiment) {
                 await supabase
-                  .from("competitor_topics")
-                  .insert(topicsToInsert);
-
-                console.log(`Inserted ${topicsToInsert.length} topics`);
+                  .from("competitor_reviews")
+                  .update({
+                    sentiment: review.sentiment,
+                    topics: review.topics,
+                  })
+                  .eq("competitor_benchmark_id", competitor.id)
+                  .eq("external_id", review.external_id);
               }
-            } catch (error) {
-              console.error("Error extracting topics:", error);
+
+              // Extract topics from all reviews
+              try {
+                console.log(`Extracting topics from reviews...`);
+                const topicAnalysis = await extractTopicsFromReviews(
+                  reviewsToInsert as CompetitorReview[]
+                );
+
+                // Store topics
+                if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
+                  console.log(`Found ${topicAnalysis.topics.length} topics`);
+                  const topicsToInsert = topicAnalysis.topics.map((t) => ({
+                    competitor_benchmark_id: competitor.id,
+                    topic: t.topic,
+                    mention_count: t.mention_count,
+                    sentiment_score: t.sentiment_score,
+                  }));
+
+                  await supabase
+                    .from("competitor_topics")
+                    .insert(topicsToInsert);
+
+                  console.log(`Inserted ${topicsToInsert.length} topics`);
+                }
+              } catch (error) {
+                console.error("Error extracting topics:", error);
+              }
+
+              // Calculate sentiment breakdown
+              const sentimentCounts = {
+                positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
+                mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
+                negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
+              };
+
+              console.log(`Sentiment breakdown:`, sentimentCounts);
+
+              // Update competitor benchmark with sentiment data
+              await supabase
+                .from("competitor_benchmarks")
+                .update({
+                  positive_count: sentimentCounts.positive,
+                  mixed_count: sentimentCounts.mixed,
+                  negative_count: sentimentCounts.negative,
+                })
+                .eq("id", competitor.id);
+
+              console.log(`Successfully added ${reviewsToInsert.length} reviews for competitor`);
             }
-
-            // Calculate sentiment breakdown
-            const sentimentCounts = {
-              positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
-              mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
-              negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
-            };
-
-            console.log(`Sentiment breakdown:`, sentimentCounts);
-
-            // Update competitor benchmark with sentiment data
-            await supabase
-              .from("competitor_benchmarks")
-              .update({
-                positive_count: sentimentCounts.positive,
-                mixed_count: sentimentCounts.mixed,
-                negative_count: sentimentCounts.negative,
-              })
-              .eq("id", competitor.id);
-
-            console.log(`Successfully added ${reviewsToInsert.length} reviews for competitor`);
           }
+        } else {
+          console.warn(`No reviews returned from Apify`);
         }
       } catch (error) {
-        console.error("Error processing competitor reviews:", error);
-        // Continue even if review processing fails
+        console.error("Error fetching reviews from Apify:", error);
+        // Continue even if Apify fails - competitor is still created
       }
     } else {
-      console.warn(`No reviews found for competitor or place details unavailable`);
-      console.warn(`Place details:`, {
-        hasPlaceDetails: !!placeDetails,
-        hasReviews: !!placeDetails?.reviews,
-        reviewCount: placeDetails?.reviews?.length || 0,
-      });
+      console.warn(`No Google Maps URL provided - skipping Apify review fetch`);
     }
 
     return NextResponse.json({
