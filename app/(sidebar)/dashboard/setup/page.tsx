@@ -37,6 +37,9 @@ export default function SetupPage() {
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState("");
+  const [urlValidating, setUrlValidating] = useState(false);
+  const [urlValid, setUrlValid]           = useState(false);
+  const [urlValidationMsg, setUrlValidationMsg] = useState("");
   // Whether this user already has at least one location
   const [hasExisting, setHasExisting]     = useState(false);
   const [checkingExisting, setChecking]   = useState(true);
@@ -58,6 +61,43 @@ export default function SetupPage() {
     }
     check();
   }, []);
+
+  // Validate Google Maps URL
+  async function validateGoogleMapsUrl() {
+    if (!googleMapsUrl.trim()) {
+      setUrlValidationMsg("Please enter a URL");
+      setUrlValid(false);
+      return;
+    }
+
+    setUrlValidating(true);
+    setUrlValidationMsg("");
+
+    try {
+      const res = await fetch("/api/validate-google-maps-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: googleMapsUrl }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setUrlValidationMsg(data.error || "Invalid Google Maps URL");
+        setUrlValid(false);
+        setUrlValidating(false);
+        return;
+      }
+
+      setUrlValidationMsg(`✓ Location verified: ${data.businessName}`);
+      setUrlValid(true);
+      setUrlValidating(false);
+    } catch (err) {
+      setUrlValidationMsg("Failed to validate URL. Please try again.");
+      setUrlValid(false);
+      setUrlValidating(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -174,14 +214,44 @@ export default function SetupPage() {
               <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-1.5">
                 Google Maps Business URL <span className="text-slate-500">(optional)</span>
               </label>
-              <input
-                id="url"
-                type="url"
-                value={googleMapsUrl}
-                onChange={(e) => setGoogleMapsUrl(e.target.value)}
-                placeholder="https://www.google.com/maps/place/..."
-                className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200"
-              />
+              <div className="flex gap-2">
+                <input
+                  id="url"
+                  type="url"
+                  value={googleMapsUrl}
+                  onChange={(e) => {
+                    setGoogleMapsUrl(e.target.value);
+                    setUrlValid(false);
+                    setUrlValidationMsg("");
+                  }}
+                  placeholder="https://www.google.com/maps/place/..."
+                  className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
+                    urlValid
+                      ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                      : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  }`}
+                />
+                {googleMapsUrl.trim() && !urlValid && (
+                  <button
+                    type="button"
+                    onClick={validateGoogleMapsUrl}
+                    disabled={urlValidating}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                  >
+                    {urlValidating ? "Verifying..." : "Verify"}
+                  </button>
+                )}
+              </div>
+
+              {/* Validation message */}
+              {urlValidationMsg && (
+                <p className={`text-xs mt-2 ${
+                  urlValid ? "text-emerald-400" : "text-red-400"
+                }`}>
+                  {urlValidationMsg}
+                </p>
+              )}
+
               <p className="text-xs text-slate-500 mt-2">
                 Paste the URL from your Google Maps business listing to fetch reviews automatically.
               </p>
