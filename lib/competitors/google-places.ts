@@ -65,17 +65,27 @@ export async function fetchPlaceDetails(
   }
 
   try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=place_id,name,formatted_address,rating,user_ratings_total,reviews&key=${apiKey}`
-    );
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=place_id,name,formatted_address,rating,user_ratings_total,reviews&key=${apiKey}`;
+    console.log(`Fetching place details from: ${url.substring(0, 100)}...`);
 
+    const response = await fetch(url);
     const data = await response.json();
 
+    console.log(`Google Places API response status:`, data.status);
+
     if (!data.result) {
+      console.warn(`No result found for place ID: ${placeId}`);
       return null;
     }
 
     const place = data.result;
+    console.log(`Place details retrieved:`, {
+      name: place.name,
+      rating: place.rating,
+      totalReviews: place.user_ratings_total,
+      reviewsCount: place.reviews?.length || 0,
+    });
+
     return {
       place_id: place.place_id,
       name: place.name,

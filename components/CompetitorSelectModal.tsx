@@ -49,8 +49,8 @@ export default function CompetitorSelectModal({
     e.preventDefault();
     setError("");
 
-    if (maxReviews < 10 || maxReviews > 500) {
-      setError("Please enter a number between 10 and 500");
+    if (maxReviews < 1 || maxReviews > 500) {
+      setError("Please enter a number between 1 and 500");
       return;
     }
 
@@ -168,7 +168,7 @@ export default function CompetitorSelectModal({
                 <input
                   id="reviews"
                   type="number"
-                  min="10"
+                  min="1"
                   max="500"
                   value={maxReviews}
                   onChange={(e) => setMaxReviews(parseInt(e.target.value) || 50)}
@@ -177,7 +177,7 @@ export default function CompetitorSelectModal({
                 />
                 <span className="text-slate-400 text-sm">reviews</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Between 10 and 500 reviews (default: 50)</p>
+              <p className="text-xs text-slate-500 mt-1">Between 1 and 500 reviews (default: 50)</p>
             </div>
 
             {/* Info */}

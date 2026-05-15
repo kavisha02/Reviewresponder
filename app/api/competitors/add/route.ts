@@ -61,12 +61,19 @@ export async function POST(request: Request) {
 
     if (googleMapsUrl) {
       placeId = extractPlaceIdFromUrl(googleMapsUrl);
+      console.log(`Extracted place ID from URL: ${placeId}`);
     }
 
     // If we have a place ID, fetch details
     if (placeId) {
       try {
+        console.log(`Fetching place details for place ID: ${placeId}`);
         placeDetails = await fetchPlaceDetails(placeId);
+        console.log(`Fetched place details:`, {
+          name: placeDetails?.name,
+          rating: placeDetails?.rating,
+          reviewCount: placeDetails?.reviews?.length || 0,
+        });
       } catch (error) {
         console.error("Error fetching place details from URL:", error);
       }
@@ -75,9 +82,15 @@ export async function POST(request: Request) {
     // If no place details yet, search by name
     if (!placeDetails) {
       try {
+        console.log(`Searching for competitor by name: ${competitorName}`);
         placeDetails = await searchGooglePlace(competitorName);
         if (placeDetails) {
           placeId = placeDetails.place_id;
+          console.log(`Found place:`, {
+            name: placeDetails.name,
+            rating: placeDetails.rating,
+            reviewCount: placeDetails.reviews?.length || 0,
+          });
         }
       } catch (error) {
         console.error("Error searching for competitor:", error);
@@ -110,9 +123,13 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log(`Created competitor benchmark: ${competitor.id}`);
+
     // Fetch and store reviews if we have place details
     if (placeDetails && placeDetails.reviews && placeDetails.reviews.length > 0) {
       try {
+        console.log(`Processing ${placeDetails.reviews.length} reviews from Google Places API`);
+
         // Transform reviews to our schema (limit to maxReviews)
         const reviewsToInsert: Partial<CompetitorReview>[] = [];
         const reviewsToAnalyze: any[] = [];
@@ -133,92 +150,111 @@ export async function POST(request: Request) {
 
         // Insert reviews first (without sentiment/topics)
         if (reviewsToInsert.length > 0) {
-          await supabase
+          console.log(`Inserting ${reviewsToInsert.length} reviews into database`);
+          const { error: insertError } = await supabase
             .from("competitor_reviews")
             .insert(reviewsToInsert);
 
-          // Analyze sentiment for each review
-          console.log(`Analyzing sentiment for ${reviewsToAnalyze.length} reviews...`);
-          const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
+          if (insertError) {
+            console.error("Error inserting reviews:", insertError);
+          } else {
+            console.log(`Successfully inserted ${reviewsToInsert.length} reviews`);
 
-          for (const review of reviewsToAnalyze) {
-            try {
-              const sentiment = await analyzeSingleReviewSentiment(review.text);
-              reviewsWithSentiment.push({
-                external_id: `${placeId}_${review.time}`,
-                sentiment: sentiment.sentiment,
-                topics: sentiment.topics,
-              });
-            } catch (error) {
-              console.error("Error analyzing review sentiment:", error);
-              reviewsWithSentiment.push({
-                external_id: `${placeId}_${review.time}`,
-                sentiment: "mixed",
-                topics: [],
-              });
+            // Analyze sentiment for each review
+            console.log(`Analyzing sentiment for ${reviewsToAnalyze.length} reviews...`);
+            const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
+
+            for (const review of reviewsToAnalyze) {
+              try {
+                const sentiment = await analyzeSingleReviewSentiment(review.text);
+                reviewsWithSentiment.push({
+                  external_id: `${placeId}_${review.time}`,
+                  sentiment: sentiment.sentiment,
+                  topics: sentiment.topics,
+                });
+              } catch (error) {
+                console.error("Error analyzing review sentiment:", error);
+                reviewsWithSentiment.push({
+                  external_id: `${placeId}_${review.time}`,
+                  sentiment: "mixed",
+                  topics: [],
+                });
+              }
             }
-          }
 
-          // Update reviews with sentiment data
-          for (const review of reviewsWithSentiment) {
-            await supabase
-              .from("competitor_reviews")
-              .update({
-                sentiment: review.sentiment,
-                topics: review.topics,
-              })
-              .eq("competitor_benchmark_id", competitor.id)
-              .eq("external_id", review.external_id);
-          }
-
-          // Extract topics from all reviews
-          try {
-            const topicAnalysis = await extractTopicsFromReviews(
-              reviewsToInsert as CompetitorReview[]
-            );
-
-            // Store topics
-            if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
-              const topicsToInsert = topicAnalysis.topics.map((t) => ({
-                competitor_benchmark_id: competitor.id,
-                topic: t.topic,
-                mention_count: t.mention_count,
-                sentiment_score: t.sentiment_score,
-              }));
-
+            // Update reviews with sentiment data
+            console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
+            for (const review of reviewsWithSentiment) {
               await supabase
-                .from("competitor_topics")
-                .insert(topicsToInsert);
+                .from("competitor_reviews")
+                .update({
+                  sentiment: review.sentiment,
+                  topics: review.topics,
+                })
+                .eq("competitor_benchmark_id", competitor.id)
+                .eq("external_id", review.external_id);
             }
-          } catch (error) {
-            console.error("Error extracting topics:", error);
+
+            // Extract topics from all reviews
+            try {
+              console.log(`Extracting topics from reviews...`);
+              const topicAnalysis = await extractTopicsFromReviews(
+                reviewsToInsert as CompetitorReview[]
+              );
+
+              // Store topics
+              if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
+                console.log(`Found ${topicAnalysis.topics.length} topics`);
+                const topicsToInsert = topicAnalysis.topics.map((t) => ({
+                  competitor_benchmark_id: competitor.id,
+                  topic: t.topic,
+                  mention_count: t.mention_count,
+                  sentiment_score: t.sentiment_score,
+                }));
+
+                await supabase
+                  .from("competitor_topics")
+                  .insert(topicsToInsert);
+
+                console.log(`Inserted ${topicsToInsert.length} topics`);
+              }
+            } catch (error) {
+              console.error("Error extracting topics:", error);
+            }
+
+            // Calculate sentiment breakdown
+            const sentimentCounts = {
+              positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
+              mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
+              negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
+            };
+
+            console.log(`Sentiment breakdown:`, sentimentCounts);
+
+            // Update competitor benchmark with sentiment data
+            await supabase
+              .from("competitor_benchmarks")
+              .update({
+                positive_count: sentimentCounts.positive,
+                mixed_count: sentimentCounts.mixed,
+                negative_count: sentimentCounts.negative,
+              })
+              .eq("id", competitor.id);
+
+            console.log(`Successfully added ${reviewsToInsert.length} reviews for competitor`);
           }
-
-          // Calculate sentiment breakdown
-          const sentimentCounts = {
-            positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
-            mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
-            negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
-          };
-
-          // Update competitor benchmark with sentiment data
-          await supabase
-            .from("competitor_benchmarks")
-            .update({
-              positive_count: sentimentCounts.positive,
-              mixed_count: sentimentCounts.mixed,
-              negative_count: sentimentCounts.negative,
-            })
-            .eq("id", competitor.id);
-
-          console.log(`Successfully added ${reviewsToInsert.length} reviews for competitor`);
         }
       } catch (error) {
         console.error("Error processing competitor reviews:", error);
         // Continue even if review processing fails
       }
     } else {
-      console.warn("No reviews found for competitor or place details unavailable");
+      console.warn(`No reviews found for competitor or place details unavailable`);
+      console.warn(`Place details:`, {
+        hasPlaceDetails: !!placeDetails,
+        hasReviews: !!placeDetails?.reviews,
+        reviewCount: placeDetails?.reviews?.length || 0,
+      });
     }
 
     return NextResponse.json({
