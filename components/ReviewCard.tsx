@@ -86,21 +86,24 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
   const [generating, setGenerating] = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState("");
+  const [showToneModal, setShowToneModal] = useState(false);
+  const [selectedTone, setSelectedTone] = useState<"professional" | "friendly" | "casual">("professional");
 
   const initials = review.author_name
     ? review.author_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
   // ── Generate / Regenerate ───────────────────────────────────────────────
-  async function handleGenerate() {
+  async function handleGenerate(tone: "professional" | "friendly" | "casual" = "professional") {
     setGenerating(true);
     setError("");
     setIsEditing(false);
+    setShowToneModal(false);
 
     const res  = await fetch("/api/reviews/generate-response", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ reviewId: review.id }),
+      body:    JSON.stringify({ reviewId: review.id, tone }),
     });
     const data = await res.json();
 
@@ -275,7 +278,7 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
             {/* Generate — shown when no draft and no owner response */}
             {status === "new" && !hasOwnerResponse && (
               <button
-                onClick={handleGenerate}
+                onClick={() => setShowToneModal(true)}
                 disabled={generating}
                 className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all duration-200 ${
                   generating
@@ -300,7 +303,7 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
             {/* Regenerate — shown when draft exists */}
             {status === "draft" && (
               <button
-                onClick={handleGenerate}
+                onClick={() => setShowToneModal(true)}
                 disabled={generating}
                 className="text-xs px-3 py-1.5 rounded-lg border bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border-slate-600 transition-all duration-200 disabled:opacity-50"
               >
@@ -329,6 +332,82 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
           </div>
         )}
       </div>
+
+      {/* ── Tone Selection Modal ── */}
+      {showToneModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+            <h2 className="text-lg font-bold text-white mb-4">Choose Response Tone</h2>
+            <p className="text-slate-400 text-sm mb-6">
+              How would you like the AI to respond to this review?
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {[
+                {
+                  id: "professional",
+                  label: "Professional",
+                  description: "Formal, polished, and professional",
+                  icon: "💼",
+                },
+                {
+                  id: "friendly",
+                  label: "Friendly",
+                  description: "Warm, approachable, and conversational",
+                  icon: "😊",
+                },
+                {
+                  id: "casual",
+                  label: "Casual",
+                  description: "Relaxed, informal, and personable",
+                  icon: "👋",
+                },
+              ].map((tone) => (
+                <label
+                  key={tone.id}
+                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedTone === tone.id
+                      ? "bg-indigo-950/50 border-indigo-600 ring-2 ring-indigo-500/30"
+                      : "bg-slate-900/50 border-slate-700 hover:border-slate-600"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="tone"
+                    value={tone.id}
+                    checked={selectedTone === tone.id}
+                    onChange={(e) => setSelectedTone(e.target.value as "professional" | "friendly" | "casual")}
+                    className="mt-1 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{tone.icon}</span>
+                      <span className="font-medium text-white">{tone.label}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">{tone.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowToneModal(false)}
+                className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleGenerate(selectedTone)}
+                disabled={generating}
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+              >
+                {generating ? "Generating…" : "Generate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

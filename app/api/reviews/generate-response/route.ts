@@ -91,10 +91,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reviewId } = await request.json();
+    const { reviewId, tone } = await request.json();
     if (!reviewId) {
       return NextResponse.json({ error: "reviewId is required" }, { status: 400 });
     }
+
+    // Validate tone, default to professional
+    const validTones = ["professional", "friendly", "casual"];
+    const selectedTone = validTones.includes(tone) ? tone : "professional";
 
     // Fetch the review and its parent business in one query
     const { data: review, error: reviewError } = await supabase
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
     const prompt = buildPrompt(
       review.businesses.name,
       review.businesses.business_type,
-      review.businesses.tone,
+      selectedTone,
       review.rating,
       review.review_text
     );
