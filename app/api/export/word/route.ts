@@ -104,37 +104,37 @@ export async function POST(request: Request) {
 
       const metricsRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Metric")] }),
             new TableCell({ children: [new Paragraph("Value")] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Total Reviews")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.total.toString())] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Average Rating")] }),
             new TableCell({ children: [new Paragraph(`${reportData.metrics.avgRating}★`)] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Response Rate")] }),
             new TableCell({ children: [new Paragraph(`${reportData.metrics.responseRate}%`)] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Last 30 Days")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.last30Count.toString())] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Needs Attention")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.needsAttention.toString())] }),
           ],
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
 
       const ratingRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Rating")] }),
             new TableCell({ children: [new Paragraph("Count")] }),
             new TableCell({ children: [new Paragraph("Percentage")] }),
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
         ...reportData.metrics.ratingCounts.map(
           (r: any) =>
             new TableRow({
-              cells: [
+              children: [
                 new TableCell({ children: [new Paragraph(`${"★".repeat(r.star)}`)] }),
                 new TableCell({ children: [new Paragraph(r.count.toString())] }),
                 new TableCell({
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
 
       const monthlyRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Month")] }),
             new TableCell({ children: [new Paragraph("Count")] }),
             new TableCell({ children: [new Paragraph("Avg Rating")] }),
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
         ...reportData.metrics.monthlyData.map(
           (m: any) =>
             new TableRow({
-              cells: [
+              children: [
                 new TableCell({ children: [new Paragraph(m.label)] }),
                 new TableCell({ children: [new Paragraph(m.count.toString())] }),
                 new TableCell({
@@ -253,7 +253,7 @@ export async function POST(request: Request) {
 
       const statusRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Status")] }),
             new TableCell({ children: [new Paragraph("Count")] }),
           ],
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
         ...reportData.metrics.statusData.map(
           (s: any) =>
             new TableRow({
-              cells: [
+              children: [
                 new TableCell({ children: [new Paragraph(s.label)] }),
                 new TableCell({ children: [new Paragraph(s.count.toString())] }),
               ],
@@ -291,14 +291,14 @@ export async function POST(request: Request) {
 
       const sentimentRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Sentiment")] }),
             new TableCell({ children: [new Paragraph("Count")] }),
             new TableCell({ children: [new Paragraph("Percentage")] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Positive (4-5★)")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.sentPositive.toString())] }),
             new TableCell({
@@ -313,7 +313,7 @@ export async function POST(request: Request) {
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Mixed (3★)")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.sentNeutral.toString())] }),
             new TableCell({
@@ -328,7 +328,7 @@ export async function POST(request: Request) {
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Negative (1-2★)")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.sentNegative.toString())] }),
             new TableCell({
@@ -366,25 +366,25 @@ export async function POST(request: Request) {
 
       const langRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Language")] }),
             new TableCell({ children: [new Paragraph("Count")] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("English")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.langCounts.english.toString())] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Hindi")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.langCounts.hindi.toString())] }),
           ],
         }),
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Hinglish")] }),
             new TableCell({ children: [new Paragraph(reportData.metrics.langCounts.hinglish.toString())] }),
           ],
@@ -433,7 +433,7 @@ export async function POST(request: Request) {
       if (categoryData.topics && Array.isArray(categoryData.topics)) {
         const topicsRows = [
           new TableRow({
-            cells: [
+            children: [
               new TableCell({ children: [new Paragraph("Topic")] }),
               new TableCell({ children: [new Paragraph("Sentiment")] }),
               new TableCell({ children: [new Paragraph("Mentions")] }),
@@ -442,7 +442,7 @@ export async function POST(request: Request) {
           ...categoryData.topics.slice(0, 10).map(
             (t: any) =>
               new TableRow({
-                cells: [
+                children: [
                   new TableCell({ children: [new Paragraph(t.topic)] }),
                   new TableCell({ children: [new Paragraph(t.sentiment)] }),
                   new TableCell({ children: [new Paragraph(t.mentions.toString())] }),
@@ -573,7 +573,7 @@ export async function POST(request: Request) {
 
       const responseRows = [
         new TableRow({
-          cells: [
+          children: [
             new TableCell({ children: [new Paragraph("Author")] }),
             new TableCell({ children: [new Paragraph("Rating")] }),
             new TableCell({ children: [new Paragraph("Response")] }),
@@ -582,7 +582,7 @@ export async function POST(request: Request) {
         ...reportData.metrics.publishedReviews.slice(0, 10).map(
           (r: any) =>
             new TableRow({
-              cells: [
+              children: [
                 new TableCell({ children: [new Paragraph(r.author_name || "Anonymous")] }),
                 new TableCell({ children: [new Paragraph(`${r.rating}★`)] }),
                 new TableCell({
@@ -613,7 +613,7 @@ export async function POST(request: Request) {
 
     const buffer = await Packer.toBuffer(doc);
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as any, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Content-Disposition": `attachment; filename="${reportData.business.name}-report.docx"`,

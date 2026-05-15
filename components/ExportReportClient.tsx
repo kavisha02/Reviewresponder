@@ -354,14 +354,14 @@ export default function ExportReportClient({ reportData }: Props) {
             </div>
           )}
 
-          {selectedSections.has("summary") && reportData.analyses.summary && (
+          {selectedSections.has("summary") && (reportData.analyses.summary as any) && (
             <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Location Summary</h2>
-              <p style={{ color: '#374151', whiteSpace: 'pre-wrap', margin: '0' }}>{reportData.analyses.summary as string}</p>
+              <p style={{ color: '#374151', whiteSpace: 'pre-wrap', margin: '0' }}>{String(reportData.analyses.summary)}</p>
             </div>
           )}
 
-          {selectedSections.has("category") && reportData.analyses.category && (
+          {selectedSections.has("category") && (reportData.analyses.category as any) && (
             <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Category Analysis</h2>
               <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
@@ -385,7 +385,7 @@ export default function ExportReportClient({ reportData }: Props) {
             </div>
           )}
 
-          {selectedSections.has("insights") && reportData.analyses.insights && (
+          {selectedSections.has("insights") && (reportData.analyses.insights as any) && (
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>AI Actionable Insights</h2>
               <div>
@@ -400,7 +400,7 @@ export default function ExportReportClient({ reportData }: Props) {
             </div>
           )}
 
-          {selectedSections.has("sentimentInsights") && reportData.analyses.sentiment && (
+          {selectedSections.has("sentimentInsights") && (reportData.analyses.sentiment as any) && (
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>AI Sentiment Insights</h2>
               <div>
