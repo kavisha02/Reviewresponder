@@ -225,13 +225,22 @@ export async function POST(request: Request) {
 
               console.log(`Sentiment breakdown:`, sentimentCounts);
 
-              // Update competitor benchmark with sentiment data
+              // Calculate average rating from reviews
+              const avgRating = reviewsToInsert.length > 0
+                ? (reviewsToInsert.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsToInsert.length).toFixed(2)
+                : null;
+
+              console.log(`Average rating: ${avgRating}`);
+
+              // Update competitor benchmark with sentiment data and metrics
               await supabase
                 .from("competitor_benchmarks")
                 .update({
                   positive_count: sentimentCounts.positive,
                   mixed_count: sentimentCounts.mixed,
                   negative_count: sentimentCounts.negative,
+                  avg_rating: avgRating ? parseFloat(avgRating) : null,
+                  total_reviews: reviewsToInsert.length,
                 })
                 .eq("id", competitor.id);
 
