@@ -58,7 +58,7 @@ export default function HeadToHeadPage() {
     }
   }
 
-  async function handleAddCompetitor(competitorName: string, googleMapsUrl?: string) {
+  async function handleAddCompetitor(competitorName: string, googleMapsUrl?: string, maxReviews?: number) {
     setIsAddingCompetitor(true);
     try {
       const res = await fetch("/api/competitors/add", {
@@ -68,6 +68,7 @@ export default function HeadToHeadPage() {
           businessId,
           competitorName,
           googleMapsUrl,
+          maxReviews: maxReviews || 50,
         }),
       });
 

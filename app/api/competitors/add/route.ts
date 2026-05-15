@@ -4,14 +4,14 @@
  * Adds a new competitor to track for a business.
  * Validates tier limits and fetches initial competitor data.
  *
- * Request body: { businessId: string, competitorName: string, googleMapsUrl?: string }
+ * Request body: { businessId: string, competitorName: string, googleMapsUrl?: string, maxReviews?: number }
  * Response: { success: boolean, competitorId?: string, error?: string }
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkCompetitorLimit } from "@/lib/competitors/tier-check";
-import { fetchPlaceDetails, extractPlaceIdFromUrl } from "@/lib/competitors/google-places";
+import { fetchPlaceDetails, extractPlaceIdFromUrl, searchGooglePlace } from "@/lib/competitors/google-places";
 import { extractTopicsFromReviews, analyzeSingleReviewSentiment } from "@/lib/competitors/gemini-analysis";
 import { CompetitorReview } from "@/lib/types";
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { businessId, competitorName, googleMapsUrl } = await request.json();
+    const { businessId, competitorName, googleMapsUrl, maxReviews = 50 } = await request.json();
 
     if (!businessId || !competitorName) {
       return NextResponse.json(
@@ -63,27 +63,24 @@ export async function POST(request: Request) {
       placeId = extractPlaceIdFromUrl(googleMapsUrl);
     }
 
-    if (!placeId) {
-      // Search by competitor name
-      try {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(competitorName)}&key=${process.env.GOOGLE_PLACES_API_KEY}`
-        );
-        const data = await response.json();
-        if (data.results && data.results.length > 0) {
-          placeId = data.results[0].place_id;
-        }
-      } catch (error) {
-        console.error("Error searching for competitor:", error);
-      }
-    }
-
-    // Fetch place details if we have a place ID
+    // If we have a place ID, fetch details
     if (placeId) {
       try {
         placeDetails = await fetchPlaceDetails(placeId);
       } catch (error) {
-        console.error("Error fetching place details:", error);
+        console.error("Error fetching place details from URL:", error);
+      }
+    }
+
+    // If no place details yet, search by name
+    if (!placeDetails) {
+      try {
+        placeDetails = await searchGooglePlace(competitorName);
+        if (placeDetails) {
+          placeId = placeDetails.place_id;
+        }
+      } catch (error) {
+        console.error("Error searching for competitor:", error);
       }
     }
 
@@ -116,12 +113,12 @@ export async function POST(request: Request) {
     // Fetch and store reviews if we have place details
     if (placeDetails && placeDetails.reviews && placeDetails.reviews.length > 0) {
       try {
-        // Transform reviews to our schema
+        // Transform reviews to our schema (limit to maxReviews)
         const reviewsToInsert: Partial<CompetitorReview>[] = [];
+        const reviewsToAnalyze: any[] = [];
 
-        for (const review of placeDetails.reviews.slice(0, 50)) {
-          const sentiment = await analyzeSingleReviewSentiment(review.text);
-
+        for (const review of placeDetails.reviews.slice(0, Math.min(maxReviews, placeDetails.reviews.length))) {
+          reviewsToAnalyze.push(review);
           reviewsToInsert.push({
             competitor_benchmark_id: competitor.id,
             external_id: `${placeId}_${review.time}`,
@@ -129,41 +126,79 @@ export async function POST(request: Request) {
             rating: review.rating,
             review_text: review.text,
             review_date: new Date(review.time * 1000).toISOString(),
-            sentiment: sentiment.sentiment,
-            topics: sentiment.topics,
+            sentiment: null,
+            topics: null,
           });
         }
 
-        // Insert reviews
+        // Insert reviews first (without sentiment/topics)
         if (reviewsToInsert.length > 0) {
           await supabase
             .from("competitor_reviews")
             .insert(reviewsToInsert);
 
-          // Extract topics from all reviews
-          const topicAnalysis = await extractTopicsFromReviews(
-            reviewsToInsert as CompetitorReview[]
-          );
+          // Analyze sentiment for each review
+          console.log(`Analyzing sentiment for ${reviewsToAnalyze.length} reviews...`);
+          const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
 
-          // Store topics
-          if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
-            const topicsToInsert = topicAnalysis.topics.map((t) => ({
-              competitor_benchmark_id: competitor.id,
-              topic: t.topic,
-              mention_count: t.mention_count,
-              sentiment_score: t.sentiment_score,
-            }));
+          for (const review of reviewsToAnalyze) {
+            try {
+              const sentiment = await analyzeSingleReviewSentiment(review.text);
+              reviewsWithSentiment.push({
+                external_id: `${placeId}_${review.time}`,
+                sentiment: sentiment.sentiment,
+                topics: sentiment.topics,
+              });
+            } catch (error) {
+              console.error("Error analyzing review sentiment:", error);
+              reviewsWithSentiment.push({
+                external_id: `${placeId}_${review.time}`,
+                sentiment: "mixed",
+                topics: [],
+              });
+            }
+          }
 
+          // Update reviews with sentiment data
+          for (const review of reviewsWithSentiment) {
             await supabase
-              .from("competitor_topics")
-              .insert(topicsToInsert);
+              .from("competitor_reviews")
+              .update({
+                sentiment: review.sentiment,
+                topics: review.topics,
+              })
+              .eq("competitor_benchmark_id", competitor.id)
+              .eq("external_id", review.external_id);
+          }
+
+          // Extract topics from all reviews
+          try {
+            const topicAnalysis = await extractTopicsFromReviews(
+              reviewsToInsert as CompetitorReview[]
+            );
+
+            // Store topics
+            if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
+              const topicsToInsert = topicAnalysis.topics.map((t) => ({
+                competitor_benchmark_id: competitor.id,
+                topic: t.topic,
+                mention_count: t.mention_count,
+                sentiment_score: t.sentiment_score,
+              }));
+
+              await supabase
+                .from("competitor_topics")
+                .insert(topicsToInsert);
+            }
+          } catch (error) {
+            console.error("Error extracting topics:", error);
           }
 
           // Calculate sentiment breakdown
           const sentimentCounts = {
-            positive: reviewsToInsert.filter((r) => r.sentiment === "positive").length,
-            mixed: reviewsToInsert.filter((r) => r.sentiment === "mixed").length,
-            negative: reviewsToInsert.filter((r) => r.sentiment === "negative").length,
+            positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
+            mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
+            negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
           };
 
           // Update competitor benchmark with sentiment data
@@ -175,11 +210,15 @@ export async function POST(request: Request) {
               negative_count: sentimentCounts.negative,
             })
             .eq("id", competitor.id);
+
+          console.log(`Successfully added ${reviewsToInsert.length} reviews for competitor`);
         }
       } catch (error) {
         console.error("Error processing competitor reviews:", error);
         // Continue even if review processing fails
       }
+    } else {
+      console.warn("No reviews found for competitor or place details unavailable");
     }
 
     return NextResponse.json({
