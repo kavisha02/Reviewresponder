@@ -1,14 +1,14 @@
 /**
  * API Route: POST /api/competitors/:competitorId/sync
  *
- * Manually triggers a sync of competitor reviews and metrics.
+ * Manually triggers a sync of competitor reviews and metrics using Apify.
  *
  * Response: { success: boolean, reviewsAdded: number, message: string }
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { fetchPlaceDetails } from "@/lib/competitors/google-places";
+import { fetchCompetitorReviewsFromApify, transformApifyReviewToCompetitorReview } from "@/lib/competitors/apify-reviews";
 import { extractTopicsFromReviews, analyzeSingleReviewSentiment } from "@/lib/competitors/gemini-analysis";
 import { CompetitorReview } from "@/lib/types";
 
@@ -38,20 +38,25 @@ export async function POST(
       return NextResponse.json({ error: "Competitor not found" }, { status: 404 });
     }
 
-    if (!competitor.google_place_id) {
+    if (!competitor.google_maps_url) {
       return NextResponse.json(
-        { error: "Competitor does not have a Google Place ID" },
+        { error: "Competitor does not have a Google Maps URL" },
         { status: 400 }
       );
     }
 
-    // Fetch latest place details
-    const placeDetails = await fetchPlaceDetails(competitor.google_place_id);
-    if (!placeDetails) {
-      return NextResponse.json(
-        { error: "Could not fetch competitor data from Google Places" },
-        { status: 500 }
-      );
+    console.log(`Syncing reviews for competitor ${competitorId} from URL: ${competitor.google_maps_url}`);
+
+    // Fetch reviews from Apify
+    const apifyReviews = await fetchCompetitorReviewsFromApify(competitor.google_maps_url, 100);
+    console.log(`Apify returned ${apifyReviews.length} reviews`);
+
+    if (!apifyReviews || apifyReviews.length === 0) {
+      return NextResponse.json({
+        success: true,
+        reviewsAdded: 0,
+        message: "No new reviews found",
+      });
     }
 
     // Get existing review IDs to avoid duplicates
@@ -62,36 +67,69 @@ export async function POST(
 
     const existingIds = new Set(existingReviews?.map((r) => r.external_id) || []);
 
-    // Process new reviews
-    const newReviews: Partial<CompetitorReview>[] = [];
+    // Transform and filter new reviews
+    const reviewsToInsert: Partial<CompetitorReview>[] = [];
     let reviewsAdded = 0;
 
-    for (const review of placeDetails.reviews || []) {
-      const externalId = `${competitor.google_place_id}_${review.time}`;
+    for (const review of apifyReviews) {
+      const externalId = review.reviewId || review.id || `apify_${review.publishedAtDate}`;
 
       if (!existingIds.has(externalId)) {
-        const sentiment = await analyzeSingleReviewSentiment(review.text);
-
-        newReviews.push({
-          competitor_benchmark_id: competitorId,
-          external_id: externalId,
-          author_name: review.author_name,
-          rating: review.rating,
-          review_text: review.text,
-          review_date: new Date(review.time * 1000).toISOString(),
-          sentiment: sentiment.sentiment,
-          topics: sentiment.topics,
-        });
-
+        const transformed = transformApifyReviewToCompetitorReview(review, competitorId, competitor.google_place_id);
+        reviewsToInsert.push(transformed);
         reviewsAdded++;
       }
     }
 
+    console.log(`Found ${reviewsAdded} new reviews to insert`);
+
     // Insert new reviews
-    if (newReviews.length > 0) {
-      await supabase
+    if (reviewsToInsert.length > 0) {
+      const { error: insertError } = await supabase
         .from("competitor_reviews")
-        .insert(newReviews);
+        .insert(reviewsToInsert);
+
+      if (insertError) {
+        console.error("Error inserting reviews:", insertError);
+        throw insertError;
+      }
+
+      console.log(`Inserted ${reviewsToInsert.length} reviews`);
+
+      // Analyze sentiment for new reviews
+      console.log(`Analyzing sentiment for ${apifyReviews.length} reviews...`);
+      const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
+
+      for (const review of apifyReviews) {
+        try {
+          const sentiment = await analyzeSingleReviewSentiment(review.text || "");
+          reviewsWithSentiment.push({
+            external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+            sentiment: sentiment.sentiment,
+            topics: sentiment.topics,
+          });
+        } catch (error) {
+          console.error("Error analyzing review sentiment:", error);
+          reviewsWithSentiment.push({
+            external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+            sentiment: "mixed",
+            topics: [],
+          });
+        }
+      }
+
+      // Update reviews with sentiment data
+      console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
+      for (const review of reviewsWithSentiment) {
+        await supabase
+          .from("competitor_reviews")
+          .update({
+            sentiment: review.sentiment,
+            topics: review.topics,
+          })
+          .eq("competitor_benchmark_id", competitorId)
+          .eq("external_id", review.external_id);
+      }
     }
 
     // Recalculate metrics from all reviews
@@ -135,8 +173,8 @@ export async function POST(
       .from("competitor_snapshots")
       .insert({
         competitor_benchmark_id: competitorId,
-        avg_rating: placeDetails.rating,
-        total_reviews: placeDetails.user_ratings_total,
+        avg_rating: competitor.avg_rating,
+        total_reviews: (allReviews || []).length,
         response_rate: competitor.response_rate,
         positive_count: sentimentCounts.positive,
         mixed_count: sentimentCounts.mixed,
@@ -148,14 +186,15 @@ export async function POST(
     await supabase
       .from("competitor_benchmarks")
       .update({
-        avg_rating: placeDetails.rating,
-        total_reviews: placeDetails.user_ratings_total,
+        total_reviews: (allReviews || []).length,
         positive_count: sentimentCounts.positive,
         mixed_count: sentimentCounts.mixed,
         negative_count: sentimentCounts.negative,
         last_synced_at: new Date().toISOString(),
       })
       .eq("id", competitorId);
+
+    console.log(`Sync completed. Added ${reviewsAdded} new reviews`);
 
     return NextResponse.json({
       success: true,
