@@ -78,8 +78,8 @@ export default function SetupPage() {
       return;
     }
 
-    // Redirect to the newly created location's dashboard
-    router.push(`/dashboard?business=${data.businessId}`);
+    // Redirect to home page
+    router.push("/home");
     router.refresh();
   }
 
