@@ -62,10 +62,15 @@ export async function fetchCompetitorReviewsFromApify(
 
     const run = await client.actor(APIFY_ACTOR_ID).call(input);
     console.log(`Apify run completed with ID: ${run.id}`);
+    console.log(`Apify run status:`, run.status);
+    console.log(`Apify run exitCode:`, run.exitCode);
 
     const { items } = await client.dataset(run.defaultDatasetId).listItems();
 
     console.log(`Apify returned ${items?.length || 0} reviews`);
+    if (items && items.length > 0) {
+      console.log(`First review sample:`, items[0]);
+    }
 
     if (!items || items.length === 0) {
       console.warn("No reviews found from Apify");
@@ -80,13 +85,27 @@ export async function fetchCompetitorReviewsFromApify(
 }
 
 export function transformApifyReviewToCompetitorReview(item: ApifyReview, competitorId: string, placeId: string | null) {
+  const externalId = item.reviewId || item.id || `apify_${item.publishedAtDate}`;
+  const authorName = item.name || item.reviewerName || item.reviewer || item.author || "Anonymous";
+  const rating = item.stars || item.rating || 5;
+  const reviewText = item.text || item.reviewText || item.content || null;
+  const reviewDate = item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString();
+
+  console.log(`Transforming review:`, {
+    externalId,
+    authorName,
+    rating,
+    reviewText: reviewText?.substring(0, 50),
+    reviewDate,
+  });
+
   return {
     competitor_benchmark_id: competitorId,
-    external_id: item.reviewId || item.id || `apify_${item.publishedAtDate}`,
-    author_name: item.name || item.reviewerName || item.reviewer || item.author || "Anonymous",
-    rating: item.stars || item.rating || 5,
-    review_text: item.text || item.reviewText || item.content || null,
-    review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
+    external_id: externalId,
+    author_name: authorName,
+    rating,
+    review_text: reviewText,
+    review_date: reviewDate,
     sentiment: null,
     topics: null,
   };

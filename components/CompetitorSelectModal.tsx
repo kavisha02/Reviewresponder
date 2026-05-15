@@ -37,6 +37,11 @@ export default function CompetitorSelectModal({
       return;
     }
 
+    if (!googleMapsUrl.trim()) {
+      setError("Google Maps URL is required to fetch reviews");
+      return;
+    }
+
     if (!canAddMore) {
       setError(`You've reached the limit of ${tierLimit} competitors for your tier`);
       return;
@@ -117,18 +122,19 @@ export default function CompetitorSelectModal({
             {/* Google Maps URL */}
             <div>
               <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-1.5">
-                Google Maps URL <span className="text-slate-500">(optional)</span>
+                Google Maps URL <span className="text-red-400">*</span>
               </label>
               <input
                 id="url"
                 type="url"
+                required
                 value={googleMapsUrl}
                 onChange={(e) => setGoogleMapsUrl(e.target.value)}
                 placeholder="https://www.google.com/maps/place/..."
                 disabled={isSubmitting || !canAddMore}
                 className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 disabled:opacity-50"
               />
-              <p className="text-xs text-slate-500 mt-1">You can edit this URL later if needed</p>
+              <p className="text-xs text-slate-500 mt-1">Required to fetch competitor reviews</p>
             </div>
 
             {/* Error */}

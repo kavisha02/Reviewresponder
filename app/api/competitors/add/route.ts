@@ -138,17 +138,21 @@ export async function POST(request: Request) {
             transformApifyReviewToCompetitorReview(review, competitor.id, placeId)
           );
 
+          console.log(`Transformed reviews sample:`, reviewsToInsert[0]);
+
           // Insert reviews first (without sentiment/topics)
           if (reviewsToInsert.length > 0) {
             console.log(`Inserting ${reviewsToInsert.length} reviews into database`);
-            const { error: insertError } = await supabase
+            const { error: insertError, data: insertedData } = await supabase
               .from("competitor_reviews")
-              .insert(reviewsToInsert);
+              .insert(reviewsToInsert)
+              .select();
 
             if (insertError) {
               console.error("Error inserting reviews:", insertError);
             } else {
               console.log(`Successfully inserted ${reviewsToInsert.length} reviews`);
+              console.log(`Inserted data sample:`, insertedData?.[0]);
 
               // Analyze sentiment for each review
               console.log(`Analyzing sentiment for ${apifyReviews.length} reviews...`);
