@@ -58,25 +58,34 @@ export async function GET(
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    // Fetch user's reviews for metrics
-    const { data: userReviews } = await supabase
-      .from("reviews")
-      .select("*")
-      .eq("business_id", businessId);
-
-    // Fetch competitor's reviews
-    const { data: competitorReviews } = await supabase
-      .from("competitor_reviews")
-      .select("*")
-      .eq("competitor_benchmark_id", competitorId);
-
-    // Fetch competitor's topics
-    const { data: competitorTopics } = await supabase
-      .from("competitor_topics")
-      .select("*")
-      .eq("competitor_benchmark_id", competitorId)
-      .order("mention_count", { ascending: false })
-      .limit(5);
+    // Batch all read queries in parallel
+    const [
+      { data: userReviews },
+      { data: competitorReviews },
+      { data: competitorTopics },
+      { data: userAnalytics },
+    ] = await Promise.all([
+      supabase
+        .from("reviews")
+        .select("*")
+        .eq("business_id", businessId),
+      supabase
+        .from("competitor_reviews")
+        .select("*")
+        .eq("competitor_benchmark_id", competitorId),
+      supabase
+        .from("competitor_topics")
+        .select("*")
+        .eq("competitor_benchmark_id", competitorId)
+        .order("mention_count", { ascending: false })
+        .limit(5),
+      supabase
+        .from("analytics_cache")
+        .select("results")
+        .eq("business_id", businessId)
+        .eq("analysis_type", "category")
+        .single(),
+    ]);
 
     // Calculate user's metrics
     const userReviewsArray = userReviews || [];
@@ -102,17 +111,7 @@ export async function GET(
       ? Math.round((competitorResponseCount / competitorReviewsArray.length) * 100)
       : 0;
 
-    // Get user's top topics from analytics cache
-    const { data: userAnalytics } = await supabase
-      .from("analytics_cache")
-      .select("results")
-      .eq("business_id", businessId)
-      .eq("analysis_type", "category")
-      .single();
-
     const userTopTopics = userAnalytics?.results?.topics?.slice(0, 5).map((t: any) => t.topic) || [];
-
-    // Get competitor's recent reviews
     const competitorRecentReviews = (competitorReviews || [])
       .sort((a, b) => new Date(b.review_date || 0).getTime() - new Date(a.review_date || 0).getTime())
       .slice(0, 5);
