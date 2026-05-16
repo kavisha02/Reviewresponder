@@ -33,7 +33,12 @@ export default function DashboardClient({
   const [sortedReviews, setSortedReviews] = useState(allReviews);
   const [reviews, setReviews] = useState(allReviews);
 
-  // Default sort by urgency on mount
+  // Update reviews when the prop changes (e.g., location switched)
+  useEffect(() => {
+    setReviews(allReviews);
+  }, [allReviews]);
+
+  // Default sort by urgency on mount or when reviews change
   useEffect(() => {
     const sorted = [...reviews].sort((a, b) => {
       const aIsUrgent = a.status === "new" && a.rating <= 2 ? 1 : 0;
