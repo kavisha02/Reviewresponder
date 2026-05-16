@@ -20,9 +20,9 @@ export async function GET(request: Request) {
       { data: savedRecs },
     ] = await Promise.all([
       supabase.from("businesses").select("*").eq("id", businessId).eq("user_id", user.id).single(),
-      supabase.from("reviews").select("rating, status").eq("business_id", businessId),
+      supabase.from("reviews").select("rating, status, created_at").eq("business_id", businessId),
       supabase.from("competitor_benchmarks").select("*").eq("business_id", businessId).eq("user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("competitor_multi_recommendations").select("recommendations").eq("business_id", businessId).eq("user_id", user.id).single(),
+      supabase.from("competitor_multi_recommendations").select("recommendations, generated_at").eq("business_id", businessId).eq("user_id", user.id).single(),
     ]);
 
     if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
@@ -40,6 +40,20 @@ export async function GET(request: Request) {
     const userNegative = userReviewsArr.filter((r) => r.rating <= 2).length;
 
     const competitorsArr = competitors || [];
+
+    const generatedAt = savedRecs?.generated_at ? new Date(savedRecs.generated_at).getTime() : null;
+    let hasNewReviews = false;
+    if (generatedAt) {
+      const latestReview = userReviewsArr.reduce((max, r) => {
+        const t = (r as { created_at?: string }).created_at ? new Date((r as { created_at?: string }).created_at!).getTime() : 0;
+        return t > max ? t : max;
+      }, 0);
+      const latestSync = competitorsArr.reduce((max, c) => {
+        const t = c.last_synced_at ? new Date(c.last_synced_at).getTime() : 0;
+        return t > max ? t : max;
+      }, 0);
+      hasNewReviews = latestReview > generatedAt || latestSync > generatedAt;
+    }
 
     // Fetch topics and snapshots for all competitors in parallel
     const [topicsResults, snapshotsResults] = await Promise.all([
@@ -106,6 +120,7 @@ export async function GET(request: Request) {
         rank: rankMap.get(c.id) ?? i + 2,
       })),
       recommendations: Array.isArray(savedRecs?.recommendations) ? savedRecs.recommendations : [],
+      hasNewReviews,
     });
   } catch (err: unknown) {
     console.error("Competitor overview error:", err);

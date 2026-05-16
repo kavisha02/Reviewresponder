@@ -39,6 +39,7 @@ interface OverviewData {
   yourBusiness: YourBusiness;
   competitors: CompetitorEntry[];
   recommendations: string[];
+  hasNewReviews: boolean;
 }
 
 interface SyncModalState {
@@ -68,7 +69,6 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [generatingRecs, setGeneratingRecs] = useState(false);
-  const [recsGenerated, setRecsGenerated] = useState(false);
   const [syncModal, setSyncModal] = useState<SyncModalState | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [generatingTopicsFor, setGeneratingTopicsFor] = useState<string | null>(null);
@@ -85,7 +85,6 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
       const result = await res.json();
       if (!res.ok) { setError(result.error || "Failed to load overview"); return; }
       setData(result);
-      if (result.recommendations?.length > 0) setRecsGenerated(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -104,8 +103,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
       });
       const result = await res.json();
       if (!res.ok) { setError(result.error || "Failed to generate recommendations"); return; }
-      setData((prev) => prev ? { ...prev, recommendations: result.recommendations } : null);
-      setRecsGenerated(true);
+      setData((prev) => prev ? { ...prev, recommendations: result.recommendations, hasNewReviews: false } : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate recommendations");
     } finally {
@@ -123,7 +121,6 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
       });
       if (!res.ok) { const r = await res.json(); setError(r.error || "Sync failed"); return; }
       setSyncModal(null);
-      setRecsGenerated(false); // Reset recs when new data arrives
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
@@ -438,7 +435,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
             </section>
 
             {/* ── E. AI RECOMMENDATIONS ── */}
-            {!recsGenerated ? (
+            {!data.recommendations?.length ? (
               <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -458,7 +455,17 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
               </div>
             ) : (
               <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-6">
-                <h4 className="font-semibold text-white mb-4">💡 AI Growth Recommendations</h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-white">💡 AI Growth Recommendations</h4>
+                  <button
+                    onClick={handleGenerateRecs}
+                    disabled={!data.hasNewReviews || generatingRecs}
+                    title={!data.hasNewReviews ? "Add new reviews to refresh recommendations" : "Refresh recommendations"}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 bg-indigo-700/50 hover:bg-indigo-600/60 text-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {generatingRecs ? "Refreshing..." : "↻ Refresh"}
+                  </button>
+                </div>
                 <ul className="space-y-3">
                   {data.recommendations.map((rec, idx) => (
                     <li key={idx} className="flex gap-3 text-slate-300 text-sm">
