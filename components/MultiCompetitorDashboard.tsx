@@ -71,6 +71,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
   const [recsGenerated, setRecsGenerated] = useState(false);
   const [syncModal, setSyncModal] = useState<SyncModalState | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [generatingTopicsFor, setGeneratingTopicsFor] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -131,6 +132,23 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
     }
   }
 
+  async function handleGenerateTopics(competitorId: string) {
+    setGeneratingTopicsFor(competitorId);
+    setError("");
+    try {
+      const res = await fetch(`/api/competitors/${competitorId}/generate-topics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) { const r = await res.json(); setError(r.error || "Failed to generate topics"); return; }
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate topics");
+    } finally {
+      setGeneratingTopicsFor(null);
+    }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center py-12">
       <div className="text-slate-400">Loading competitor overview...</div>
@@ -163,7 +181,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
-    <main className="min-h-screen bg-slate-900 p-6">
+    <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header */}
@@ -190,7 +208,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase">
+                    <tr className="border-b border-slate-600 bg-slate-700/60 text-slate-300 text-xs uppercase">
                       <th className="px-4 py-3 text-left">Rank</th>
                       <th className="px-4 py-3 text-left">Name</th>
                       <th className="px-4 py-3 text-right">Rating</th>
@@ -206,9 +224,9 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                       return (
                         <tr
                           key={p.id}
-                          className={`border-b border-slate-700/50 transition-colors ${p.isYou ? "bg-indigo-950/40 border-l-2 border-l-indigo-500" : "hover:bg-slate-800/40"}`}
+                          className={`border-b border-slate-700/50 transition-colors ${p.isYou ? "bg-indigo-950/60" : "hover:bg-slate-700/30"}`}
                         >
-                          <td className="px-4 py-3 font-bold text-white">
+                          <td className={`px-4 py-3 font-bold text-white ${p.isYou ? "border-l-2 border-l-indigo-500" : ""}`}>
                             {RANK_BADGES[p.rank] || `#${p.rank}`}
                           </td>
                           <td className="px-4 py-3">
@@ -324,8 +342,24 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                             {c.topTopics.slice(0, 3).map((t) => (
                               <span key={t} className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t}</span>
                             ))}
-                            {c.topTopics.length === 0 && <span className="text-slate-500 text-xs">None yet</span>}
                           </div>
+                          {c.topTopics.length === 0 ? (
+                            <button
+                              onClick={() => handleGenerateTopics(c.id)}
+                              disabled={generatingTopicsFor === c.id}
+                              className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50 underline mt-1"
+                            >
+                              {generatingTopicsFor === c.id ? "Generating..." : "Generate Topics"}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleGenerateTopics(c.id)}
+                              disabled={generatingTopicsFor === c.id}
+                              className="text-xs text-slate-500 hover:text-slate-400 disabled:opacity-50 mt-1"
+                            >
+                              {generatingTopicsFor === c.id ? "Regenerating..." : "↻"}
+                            </button>
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -396,6 +430,15 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                       className="w-full px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-all"
                     >
                       Sync Reviews
+                    </button>
+                    <button
+                      onClick={() => handleGenerateTopics(c.id)}
+                      disabled={generatingTopicsFor === c.id}
+                      className="mt-2 w-full px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium rounded-lg transition-all disabled:opacity-50"
+                    >
+                      {generatingTopicsFor === c.id
+                        ? "Generating Topics..."
+                        : c.topTopics.length > 0 ? "Regenerate Topics" : "Generate Topics"}
                     </button>
                   </div>
                 ))}
@@ -489,6 +532,6 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
