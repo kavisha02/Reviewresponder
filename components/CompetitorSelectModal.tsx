@@ -22,7 +22,7 @@ export default function CompetitorSelectModal({
   const [step, setStep] = useState<"details" | "preview" | "reviews">("details");
   const [competitorName, setCompetitorName] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
-  const [maxReviews, setMaxReviews] = useState(50);
+  const [maxReviews, setMaxReviews] = useState(1);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,8 +54,8 @@ export default function CompetitorSelectModal({
     e.preventDefault();
     setError("");
 
-    if (maxReviews < 1 || maxReviews > 500) {
-      setError("Please enter a number between 1 and 500");
+    if (maxReviews < 1 || maxReviews > 100) {
+      setError("Please select a number between 1 and 100");
       return;
     }
 
@@ -64,7 +64,7 @@ export default function CompetitorSelectModal({
       await onAdd(competitorName, googleMapsUrl || undefined, maxReviews);
       setCompetitorName("");
       setGoogleMapsUrl("");
-      setMaxReviews(50);
+      setMaxReviews(1);
       setStep("details");
       onClose();
     } catch (err) {
@@ -232,31 +232,25 @@ export default function CompetitorSelectModal({
           </form>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Review Count */}
+            {/* Slider */}
             <div>
-              <label htmlFor="reviews" className="block text-sm font-medium text-slate-300 mb-1.5">
-                Number of Reviews <span className="text-red-400">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="reviews"
-                  type="number"
-                  min="1"
-                  max="500"
-                  value={maxReviews}
-                  onChange={(e) => setMaxReviews(parseInt(e.target.value) || 50)}
-                  disabled={isSubmitting}
-                  className="flex-1 bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 disabled:opacity-50"
-                />
-                <span className="text-slate-400 text-sm">reviews</span>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-300">Number of Reviews</label>
+                <span className="text-sm font-bold text-indigo-400">{maxReviews}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Between 1 and 500 reviews (default: 50)</p>
-            </div>
-
-            {/* Info */}
-            <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-lg px-4 py-3 text-indigo-300 text-sm">
-              <p className="font-medium mb-1">💡 Tip:</p>
-              <p>More reviews = better analysis but longer fetch time. Start with 50 for quick results.</p>
+              <input
+                type="range"
+                min="1"
+                max="100"
+                value={maxReviews}
+                onChange={(e) => setMaxReviews(parseInt(e.target.value))}
+                disabled={isSubmitting}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-50"
+              />
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
+                <span>1</span>
+                <span>100</span>
+              </div>
             </div>
 
             {/* Error */}
@@ -281,7 +275,7 @@ export default function CompetitorSelectModal({
                 disabled={isSubmitting}
                 className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
               >
-                {isSubmitting ? "Adding..." : "Add Competitor"}
+                {isSubmitting ? "Adding..." : `Add with ${maxReviews} Review${maxReviews !== 1 ? "s" : ""}`}
               </button>
             </div>
           </form>
