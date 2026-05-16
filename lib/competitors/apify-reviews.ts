@@ -90,6 +90,8 @@ export function transformApifyReviewToCompetitorReview(item: ApifyReview, compet
   const rating = item.stars || item.rating || 5;
   const reviewText = item.text || item.reviewText || item.content || null;
   const reviewDate = item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString();
+  const ownerResponse = item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null;
+  const ownerResponseDate = item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null;
 
   console.log(`Transforming review:`, {
     externalId,
@@ -97,6 +99,7 @@ export function transformApifyReviewToCompetitorReview(item: ApifyReview, compet
     rating,
     reviewText: reviewText?.substring(0, 50),
     reviewDate,
+    hasOwnerResponse: !!ownerResponse,
   });
 
   return {
@@ -106,6 +109,8 @@ export function transformApifyReviewToCompetitorReview(item: ApifyReview, compet
     rating,
     review_text: reviewText,
     review_date: reviewDate,
+    owner_response: ownerResponse,
+    owner_response_date: ownerResponseDate,
     sentiment: null,
     topics: null,
   };

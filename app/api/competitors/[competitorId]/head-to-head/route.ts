@@ -96,6 +96,13 @@ export async function GET(
       negative: userReviewsArray.filter((r) => r.rating <= 2).length,
     };
 
+    // Calculate competitor's response rate based on owner responses
+    const competitorReviewsArray = competitorReviews || [];
+    const competitorResponseCount = competitorReviewsArray.filter((r) => r.owner_response).length;
+    const competitorResponseRate = competitorReviewsArray.length > 0
+      ? Math.round((competitorResponseCount / competitorReviewsArray.length) * 100)
+      : 0;
+
     // Get user's top topics from analytics cache
     const { data: userAnalytics } = await supabase
       .from("analytics_cache")
@@ -159,7 +166,7 @@ export async function GET(
         location: competitor.competitor_location,
         avgRating: competitor.avg_rating,
         totalReviews: competitor.total_reviews,
-        responseRate: competitor.response_rate,
+        responseRate: competitorResponseRate,
         sentimentBreakdown: {
           positive: competitor.positive_count,
           mixed: competitor.mixed_count,
