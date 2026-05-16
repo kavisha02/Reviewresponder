@@ -21,6 +21,7 @@
     "resend": "^6.12.3"
   },
   "devDependencies": {
+    "@tailwindcss/oxide-win32-x64-msvc": "^4.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
