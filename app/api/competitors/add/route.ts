@@ -146,7 +146,9 @@ export async function POST(request: Request) {
 
       for (const review of apifyReviews) {
         try {
+          console.log(`Analyzing review: ${review.reviewId || review.id}`);
           const sentiment = await analyzeSingleReviewSentiment(review.text || "");
+          console.log(`Sentiment result:`, sentiment);
           reviewsWithSentiment.push({
             external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
             sentiment: sentiment.sentiment,
@@ -181,6 +183,7 @@ export async function POST(request: Request) {
         const topicAnalysis = await extractTopicsFromReviews(
           reviewsToInsert as CompetitorReview[]
         );
+        console.log(`Topic analysis result:`, topicAnalysis);
 
         // Store topics
         if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
@@ -192,11 +195,17 @@ export async function POST(request: Request) {
             sentiment_score: t.sentiment_score,
           }));
 
-          await supabase
+          const { error: topicError } = await supabase
             .from("competitor_topics")
             .insert(topicsToInsert);
 
-          console.log(`Inserted ${topicsToInsert.length} topics`);
+          if (topicError) {
+            console.error("Error inserting topics:", topicError);
+          } else {
+            console.log(`Inserted ${topicsToInsert.length} topics`);
+          }
+        } else {
+          console.log(`No topics found in analysis`);
         }
       } catch (error) {
         console.error("Error extracting topics:", error);
