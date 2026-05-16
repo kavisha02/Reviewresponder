@@ -75,19 +75,22 @@ export async function POST(request: Request) {
 
     // Transform Apify reviews to our format
     // console.log(items);
-    const reviewsToInsert = items.map((item: any) => ({
-      business_id: businessId,
-      platform: "google",
-      external_id: item.reviewId || item.id || `apify_${item.publishedAtDate}`,
-      author_name: item.name || item.reviewerName || item.reviewer || item.author || "Anonymous",
-      author_photo_url: item.reviewerPhotoUrl || item.reviewerPhoto || item.authorPhoto || null,
-      rating: item.stars || item.rating || 5,
-      review_text: item.text || item.reviewText || item.content || null,
-      review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
-      owner_response: item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null,
-      owner_response_date: item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null,
-      status: "new",
-    }));
+    const reviewsToInsert = items.map((item: any) => {
+      const ownerResponse = item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null;
+      return {
+        business_id: businessId,
+        platform: "google",
+        external_id: item.reviewId || item.id || `apify_${item.publishedAtDate}`,
+        author_name: item.name || item.reviewerName || item.reviewer || item.author || "Anonymous",
+        author_photo_url: item.reviewerPhotoUrl || item.reviewerPhoto || item.authorPhoto || null,
+        rating: item.stars || item.rating || 5,
+        review_text: item.text || item.reviewText || item.content || null,
+        review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
+        owner_response: ownerResponse,
+        owner_response_date: item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null,
+        status: ownerResponse && ownerResponse.trim().length > 0 ? "responded" : "new",
+      };
+    });
 
     // Check for duplicates before inserting
     const existingExternalIds = reviewsToInsert.map((r) => r.external_id);
