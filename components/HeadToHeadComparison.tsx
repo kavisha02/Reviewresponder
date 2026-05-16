@@ -383,7 +383,7 @@ export default function HeadToHeadComparison({
             <div>
               <p className="text-slate-400 text-sm mb-1">Response Rate</p>
               <p className="text-2xl font-bold text-slate-400">
-                {data.competitor.responseRate ? `${data.competitor.responseRate}%` : "N/A"}
+                {data.competitor.responseRate != null ? `${data.competitor.responseRate}%` : "N/A"}
               </p>
             </div>
           </div>
