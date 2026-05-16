@@ -109,8 +109,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   async function handleCategoryAnalysis() {
     // Check if analysis is fresh (no new reviews)
     if (categoryAnalysis) {
-      setError("Analysis is up to date. No new reviews to analyze.");
-      return;
+      return; // Already have analysis, don't fetch again
     }
 
     const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
@@ -149,8 +148,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   async function handleSentimentAnalysis() {
     // Check if analysis is fresh (no new reviews)
     if (sentimentAnalysis) {
-      setError("Analysis is up to date. No new reviews to analyze.");
-      return;
+      return; // Already have analysis, don't fetch again
     }
 
     const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
@@ -189,8 +187,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   async function handleActionableInsights() {
     // Check if analysis is fresh (no new reviews)
     if (actionableInsights) {
-      setError("Analysis is up to date. No new reviews to analyze.");
-      return;
+      return; // Already have insights, don't fetch again
     }
 
     const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
@@ -229,8 +226,7 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
   async function handleLocationSummary() {
     // Check if analysis is fresh (no new reviews)
     if (locationSummary) {
-      setError("Analysis is up to date. No new reviews to analyze.");
-      return;
+      return; // Already have summary, don't fetch again
     }
 
     const textReviewsCount = reviews.filter(r => r.review_text && r.review_text.trim().length > 0).length;
