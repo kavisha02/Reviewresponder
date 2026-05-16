@@ -121,14 +121,8 @@ export default function HeadToHeadComparison({
       // Auto-show topics if data already exists in DB
       if (result.competitor.topTopics?.length > 0) setTopicsGenerated(true);
 
-      // Load persisted insights from localStorage
-      const savedInsights = localStorage.getItem(`insights_${competitorId}`);
-      if (savedInsights) {
-        try {
-          result.insights = JSON.parse(savedInsights);
-          setInsightsGenerated(true);
-        } catch {}
-      }
+      // Auto-show insights if previously saved in DB
+      if (result.insights?.length > 0) setInsightsGenerated(true);
 
       setData(result);
 
@@ -138,7 +132,6 @@ export default function HeadToHeadComparison({
         setInsightsGenerated(false);
         setSentimentGenerated(false);
         setTopicsGenerated(false);
-        localStorage.removeItem(`insights_${competitorId}`);
       }
 
       // Set initial review count on first load
@@ -201,9 +194,8 @@ export default function HeadToHeadComparison({
         return;
       }
 
-      // Update data with new insights and persist to localStorage
+      // Update data with new insights
       setData((prevData) => prevData ? { ...prevData, insights: result.insights } : null);
-      localStorage.setItem(`insights_${competitorId}`, JSON.stringify(result.insights));
       setInsightsGenerated(true);
       setGeneratingInsights(false);
     } catch (err) {

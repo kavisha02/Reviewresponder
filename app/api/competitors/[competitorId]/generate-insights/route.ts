@@ -116,7 +116,7 @@ export async function POST(
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
-    const prompt = `Compare these two businesses and generate 3-5 actionable competitive insights.
+    const prompt = `You are a business growth advisor. Compare these two businesses and generate exactly 3-4 sharp, actionable insights that will directly help grow revenue and profit.
 
 Your Business (${business.name}):
 - Rating: ${userAvgRating}/5.0
@@ -133,13 +133,14 @@ Competitor (${competitor.competitor_name}):
 - Negative Reviews: ${competitor.negative_count}
 - Top Topics: ${(competitorTopics || []).map((t) => t.topic).join(", ") || "N/A"}
 
-Generate insights as a JSON array of strings. Focus on:
-1. Where you're winning/losing
-2. Sentiment differences
-3. Response rate comparison
-4. Actionable recommendations
+Rules:
+- Generate EXACTLY 3-4 insights, no more
+- Each insight must be directly tied to growing revenue or profit
+- Be specific and actionable, not generic
+- Focus on gaps vs competitor that can be turned into advantages
+- Start each with a strong action verb (e.g. "Improve", "Leverage", "Fix", "Capitalise")
 
-Return ONLY valid JSON array:
+Return ONLY a valid JSON array of strings (3-4 items):
 ["insight 1", "insight 2", "insight 3"]`;
 
     const result = await model.generateContent(prompt);
@@ -154,9 +155,16 @@ Return ONLY valid JSON array:
     }
 
     const insights = JSON.parse(jsonMatch[0]);
+    const insightsArray = Array.isArray(insights) ? insights.slice(0, 4) : [];
+
+    // Persist to DB so they survive navigation
+    await supabase
+      .from("competitor_benchmarks")
+      .update({ insights: insightsArray })
+      .eq("id", competitorId);
 
     return NextResponse.json({
-      insights: Array.isArray(insights) ? insights : [],
+      insights: insightsArray,
     });
 
   } catch (err: unknown) {

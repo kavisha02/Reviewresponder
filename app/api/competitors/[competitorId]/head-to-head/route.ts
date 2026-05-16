@@ -122,7 +122,8 @@ export async function GET(
       .slice(0, 5);
 
     // Don't generate insights on page load - user must click button
-    const insights: string[] = [];
+    // Return previously saved insights if they exist
+    const insights: string[] = Array.isArray(competitor.insights) ? competitor.insights : [];
 
     return NextResponse.json({
       yourBusiness: {
