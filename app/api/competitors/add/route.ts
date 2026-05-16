@@ -216,6 +216,7 @@ export async function POST(request: Request) {
                 topic: t.topic,
                 mention_count: t.mention_count,
                 sentiment_score: t.sentiment_score,
+                user_id: user.id,
               }));
 
               const { error: topicError } = await supabase

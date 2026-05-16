@@ -211,6 +211,11 @@ export default function HeadToHeadComparison({
         return;
       }
 
+      setData((prevData) => prevData ? {
+        ...prevData,
+        competitor: { ...prevData.competitor, sentimentBreakdown: result.sentiment }
+      } : null);
+      
       setSentimentGenerated(true);
       setGeneratingSentiment(false);
     } catch (err) {
@@ -239,7 +244,18 @@ export default function HeadToHeadComparison({
         return;
       }
 
-      setSentimentGenerated(true);
+      const mappedTopics = result.topics.map((t: any) => ({
+        topic: t.topic,
+        mentions: t.mention_count || t.mentions || 0,
+        sentiment: t.sentiment_score || t.sentiment || null
+      }));
+
+      setData((prevData) => prevData ? {
+        ...prevData,
+        competitor: { ...prevData.competitor, topTopics: mappedTopics }
+      } : null);
+
+      setTopicsGenerated(true);
       setGeneratingTopics(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate topics");

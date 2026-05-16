@@ -6,7 +6,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { CompetitorReview } from "@/lib/types";
 
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 export interface TopicAnalysis {
   topics: Array<{

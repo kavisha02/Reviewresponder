@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
     const prompt = `Analyze these customer reviews and extract the main categories/topics being discussed. For each topic, identify the sentiment and provide examples.
 

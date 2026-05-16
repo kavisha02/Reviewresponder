@@ -21,7 +21,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
 // gemini-1.5-flash works on the free tier — upgrade to gemini-2.5-pro-preview once billing is enabled
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 function buildPrompt(
   businessName: string,
