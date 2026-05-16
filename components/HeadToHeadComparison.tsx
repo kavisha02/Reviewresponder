@@ -657,8 +657,8 @@ export default function HeadToHeadComparison({
         <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-6">
           <h4 className="font-semibold text-white mb-4">Recent Reviews</h4>
           <div className="space-y-3">
-            {data.yourBusiness.recentReviews.length > 0 ? (
-              data.yourBusiness.recentReviews.map((review) => (
+            {data.yourBusiness.recentReviews.slice(0, 5).length > 0 ? (
+              data.yourBusiness.recentReviews.slice(0, 5).map((review) => (
                 <div key={review.id} className="border-l-2 border-indigo-500 pl-3 py-1">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-white">
@@ -682,8 +682,8 @@ export default function HeadToHeadComparison({
         <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-6">
           <h4 className="font-semibold text-white mb-4">Recent Reviews</h4>
           <div className="space-y-3">
-            {data.competitor.recentReviews.length > 0 ? (
-              data.competitor.recentReviews.map((review) => (
+            {data.competitor.recentReviews.slice(0, 5).length > 0 ? (
+              data.competitor.recentReviews.slice(0, 5).map((review) => (
                 <div key={review.id} className="border-l-2 border-slate-600 pl-3 py-1">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-white">
