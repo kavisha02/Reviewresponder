@@ -48,8 +48,17 @@ export async function POST(
     console.log(`Syncing reviews for competitor ${competitorId} from URL: ${competitor.google_maps_url}`);
 
     // Fetch reviews from Apify
-    const apifyReviews = await fetchCompetitorReviewsFromApify(competitor.google_maps_url, 100);
-    console.log(`Apify returned ${apifyReviews.length} reviews`);
+    let apifyReviews;
+    try {
+      apifyReviews = await fetchCompetitorReviewsFromApify(competitor.google_maps_url, 100);
+      console.log(`Apify returned ${apifyReviews.length} reviews`);
+    } catch (apifyError) {
+      console.error("Apify fetch error:", apifyError);
+      return NextResponse.json(
+        { error: `Failed to fetch reviews from Apify: ${apifyError instanceof Error ? apifyError.message : "Unknown error"}` },
+        { status: 500 }
+      );
+    }
 
     if (!apifyReviews || apifyReviews.length === 0) {
       return NextResponse.json({

@@ -1,10 +1,3 @@
-/**
- * Head-to-Head Comparison Page — /dashboard/competitors/head-to-head
- *
- * Allows users to compare their business against a single competitor.
- * Shows side-by-side metrics, sentiment breakdown, topics, and AI insights.
- */
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,6 +18,7 @@ export default function HeadToHeadPage() {
   const [isAddingCompetitor, setIsAddingCompetitor] = useState(false);
   const [tierLimit, setTierLimit] = useState(3);
   const [currentCount, setCurrentCount] = useState(0);
+  const [view, setView] = useState<"list" | "comparison">("list");
 
   useEffect(() => {
     if (businessId) {
@@ -50,6 +44,9 @@ export default function HeadToHeadPage() {
       // Set first competitor as selected if available
       if (result.competitors && result.competitors.length > 0) {
         setSelectedCompetitorId(result.competitors[0].id);
+        setView("comparison");
+      } else {
+        setView("list");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load competitors");
@@ -81,6 +78,8 @@ export default function HeadToHeadPage() {
       // Refresh competitors list
       await fetchCompetitors();
       setSelectedCompetitorId(result.competitorId);
+      setShowModal(false);
+      setView("comparison");
     } catch (err) {
       throw err;
     } finally {
@@ -107,6 +106,7 @@ export default function HeadToHeadPage() {
 
       await fetchCompetitors();
       setSelectedCompetitorId(null);
+      setView("list");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove competitor");
     }
@@ -141,73 +141,116 @@ export default function HeadToHeadPage() {
           </p>
         </div>
 
-        {/* Competitor Selector */}
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex-1">
-            <label htmlFor="competitor" className="block text-sm font-medium text-slate-300 mb-2">
-              Select Competitor
-            </label>
-            <select
-              id="competitor"
-              value={selectedCompetitorId || ""}
-              onChange={(e) => setSelectedCompetitorId(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white text-sm outline-none transition-all duration-200"
-            >
-              <option value="">Choose a competitor...</option>
-              {competitors.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.competitor_name} {c.competitor_location ? `(${c.competitor_location})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
+        {view === "list" ? (
+          <>
+            {/* Competitors List */}
+            <div className="space-y-4 mb-8">
+              {competitors.length > 0 ? (
+                <>
+                  <h2 className="text-lg font-semibold text-white mb-4">Your Competitors</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {competitors.map((competitor) => (
+                      <div
+                        key={competitor.id}
+                        onClick={() => {
+                          setSelectedCompetitorId(competitor.id);
+                          setView("comparison");
+                        }}
+                        className="bg-slate-800/70 border border-slate-700 hover:border-indigo-500 rounded-xl p-6 cursor-pointer transition-all duration-200 hover:bg-slate-800"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-white">{competitor.competitor_name}</h3>
+                            {competitor.competitor_location && (
+                              <p className="text-sm text-slate-400 mt-1">{competitor.competitor_location}</p>
+                            )}
+                          </div>
+                          <div className="text-indigo-400 text-xl">→</div>
+                        </div>
 
-          <button
-            onClick={() => setShowModal(true)}
-            className="mt-6 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all duration-200"
-          >
-            + Add Competitor
-          </button>
-        </div>
+                        {/* Metrics */}
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <p className="text-slate-400 text-xs mb-1">Rating</p>
+                            <p className="text-white font-semibold">
+                              {competitor.avg_rating?.toFixed(1) || "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400 text-xs mb-1">Reviews</p>
+                            <p className="text-white font-semibold">{competitor.total_reviews || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400 text-xs mb-1">Response</p>
+                            <p className="text-white font-semibold">{competitor.response_rate || 0}%</p>
+                          </div>
+                        </div>
+
+                        {/* Sentiment breakdown */}
+                        <div className="mt-4 flex gap-2">
+                          <div className="flex-1 bg-emerald-500/20 rounded px-2 py-1 text-center">
+                            <p className="text-xs text-emerald-300">{competitor.positive_count || 0}</p>
+                          </div>
+                          <div className="flex-1 bg-yellow-500/20 rounded px-2 py-1 text-center">
+                            <p className="text-xs text-yellow-300">{competitor.mixed_count || 0}</p>
+                          </div>
+                          <div className="flex-1 bg-red-500/20 rounded px-2 py-1 text-center">
+                            <p className="text-xs text-red-300">{competitor.negative_count || 0}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-12 text-center">
+                  <p className="text-slate-400 mb-4">No competitors added yet. Add one to get started!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Add Competitor Button */}
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-lg font-semibold transition-all duration-200"
+            >
+              {competitors.length === 0 ? "Add Your First Competitor" : "+ Add Another Competitor"}
+            </button>
+
+            {/* Tier Limit Warning */}
+            {currentCount >= tierLimit && (
+              <div className="bg-yellow-950/50 border border-yellow-700/50 rounded-lg px-4 py-3 mt-6 text-yellow-300 text-sm">
+                You've reached the limit of {tierLimit} competitors for your tier. Upgrade to Pro for unlimited competitors.
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Back to list button */}
+            <button
+              onClick={() => setView("list")}
+              className="mb-6 px-4 py-2 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200"
+            >
+              ← Back to Competitors
+            </button>
+
+            {/* Comparison View */}
+            {selectedCompetitor ? (
+              <HeadToHeadComparison
+                competitorId={selectedCompetitor.id}
+                businessId={businessId}
+                competitorName={selectedCompetitor.competitor_name}
+                onRemove={handleRemoveCompetitor}
+                onRefresh={fetchCompetitors}
+              />
+            ) : null}
+          </>
+        )}
 
         {/* Error */}
         {error && (
-          <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 mb-6 text-red-300">
+          <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 mt-6 text-red-300">
             {error}
-          </div>
-        )}
-
-        {/* Tier Limit Warning */}
-        {currentCount >= tierLimit && (
-          <div className="bg-yellow-950/50 border border-yellow-700/50 rounded-lg px-4 py-3 mb-6 text-yellow-300 text-sm">
-            You've reached the limit of {tierLimit} competitors for your tier. Upgrade to Pro for unlimited competitors.
-          </div>
-        )}
-
-        {/* Comparison View */}
-        {selectedCompetitor ? (
-          <HeadToHeadComparison
-            competitorId={selectedCompetitor.id}
-            businessId={businessId}
-            competitorName={selectedCompetitor.competitor_name}
-            onRemove={handleRemoveCompetitor}
-            onRefresh={fetchCompetitors}
-          />
-        ) : (
-          <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-12 text-center">
-            <p className="text-slate-400 mb-4">
-              {competitors.length === 0
-                ? "No competitors added yet. Add one to get started!"
-                : "Select a competitor to view the comparison."}
-            </p>
-            {competitors.length === 0 && (
-              <button
-                onClick={() => setShowModal(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all duration-200"
-              >
-                Add Your First Competitor
-              </button>
-            )}
           </div>
         )}
       </div>
