@@ -22,14 +22,14 @@ import { Review } from "@/lib/types";
 const STATUS_STYLES: Record<string, string> = {
   new:       "bg-yellow-900/50 text-yellow-300 border-yellow-700/50",
   draft:     "bg-blue-900/50 text-blue-300 border-blue-700/50",
-  published: "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
+  responded: "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
   ignored:   "bg-slate-800 text-slate-400 border-slate-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   new:       "Needs Response",
   draft:     "Draft Ready",
-  published: "Responded",
+  responded: "Responded",
   ignored:   "Ignored",
 };
 
@@ -74,7 +74,7 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
   const hasOwnerResponse = review.owner_response && review.owner_response.trim().length > 0;
   const hasPublishedResponse = review.published_response && review.published_response.trim().length > 0;
 
-  const initialStatus = hasOwnerResponse && review.status === "new" ? "published" : review.status;
+  const initialStatus = hasOwnerResponse && review.status === "new" ? "responded" : review.status;
 
   // ── Local UI state ──────────────────────────────────────────────────────
   const [status,     setStatus]     = useState(initialStatus);
@@ -147,11 +147,11 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
       return;
     }
 
-    setStatus("published");
+    setStatus("responded");
     setDraft(editedText);
     setIsEditing(false);
     setSaving(false);
-    onStatusChange?.("published");
+    onStatusChange?.("responded");
 
     // Refresh page to update stats
     setTimeout(() => {
@@ -211,7 +211,7 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
         </p>
 
         {/* ── SAVED / OWNER RESPONSE ── */}
-        {(hasOwnerResponse || hasPublishedResponse || status === "published") && (
+        {(hasOwnerResponse || hasPublishedResponse || status === "responded") && (
           <div className="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-emerald-400 text-xs font-semibold uppercase tracking-wide">

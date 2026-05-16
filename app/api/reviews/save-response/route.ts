@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       .from("reviews")
       .update({
         published_response: response.trim(),
-        status: "published",
+        status: "responded",
         published_at: new Date().toISOString(),
       })
       .eq("id", reviewId);

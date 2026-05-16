@@ -5,7 +5,7 @@
  *   Ratings   : all 1–5 ★
  *   Languages : English, Hindi (Devanagari), Hinglish
  *   Tones     : glowing, loyal, surprised, neutral, disappointed, angry, sarcastic
- *   Statuses  : published (10), draft (4), ignored (1), new (13)
+ *   Statuses  : responded (10), draft (4), ignored (1), new (13)
  *   Dates     : spread across the last 6 months for the monthly-volume chart
  */
 
@@ -17,7 +17,7 @@ type ReviewInsert = {
   rating:             number;
   review_text:        string | null;
   review_date:        string;
-  status:             "new" | "draft" | "published" | "ignored";
+  status:             "new" | "draft" | "responded" | "ignored";
   draft_response?:    string | null;
   published_response?: string | null;
   published_at?:      string | null;
@@ -38,7 +38,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             5,
       review_text:        "Absolutely love this place! The service was exceptional and the staff went above and beyond. Will definitely be coming back and recommending to everyone I know.",
       review_date:        dAgo(180),
-      status:             "published",
+      status:             "responded",
       published_response: "Thank you so much, Priya! We're thrilled you had such a wonderful experience. Your kind words mean the world to our team. We look forward to welcoming you back soon!",
       published_at:       dAgo(178),
     },
@@ -50,7 +50,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             5,
       review_text:        "बहुत अच्छी सेवा! स्टाफ बहुत helpful और friendly था। सब कुछ बेहतरीन था। जरूर दोबारा आऊंगा।",
       review_date:        dAgo(175),
-      status:             "published",
+      status:             "responded",
       published_response: "बहुत बहुत धन्यवाद, Rajesh जी! आपके शब्दों से हमें बहुत खुशी हुई। हम आपका फिर से स्वागत करने के लिए तत्पर हैं!",
       published_at:       dAgo(173),
     },
@@ -62,7 +62,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             1,
       review_text:        "Terrible experience from start to finish. Waited 45 minutes with no update, service was rushed and careless, and nobody apologised. Completely unacceptable. Avoid this place.",
       review_date:        dAgo(165),
-      status:             "published",
+      status:             "responded",
       published_response: "Hi Robert, we sincerely apologise for the experience you had. This is not the standard we hold ourselves to. We'd love the opportunity to make this right — please reach out to us directly. Thank you for letting us know.",
       published_at:       dAgo(163),
     },
@@ -74,7 +74,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             4,
       review_text:        "Really good overall. Very professional and quality was great. Only minor thing was the wait time was a bit longer than expected, but worth it in the end.",
       review_date:        dAgo(160),
-      status:             "published",
+      status:             "responded",
       published_response: "Thank you, Anjali! We're glad you had a great experience overall. We appreciate your patience and we're continuously working to improve efficiency. See you next time!",
       published_at:       dAgo(158),
     },
@@ -89,7 +89,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             5,
       review_text:        "Yaar, bahut mast jagah hai! Service ekdum first class thi. Staff bhi bahut helpful tha. Definitely recommend karunga apne dosto ko. 10/10!",
       review_date:        dAgo(150),
-      status:             "published",
+      status:             "responded",
       published_response: "Thank you so much, Arjun! We're so happy you loved your experience. Your recommendation means everything to us. See you and your friends soon!",
       published_at:       dAgo(148),
     },
@@ -101,7 +101,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             2,
       review_text:        "Quite disappointing. Expected much better based on the reviews online. Service was slow and staff seemed disinterested. The quality didn't justify the price at all.",
       review_date:        dAgo(145),
-      status:             "published",
+      status:             "responded",
       published_response: "Hi Sarah, we're sorry to hear your visit didn't meet expectations. Your feedback is important and we've shared it with our team. We'd love a chance to turn this around — please come back and give us another opportunity.",
       published_at:       dAgo(143),
     },
@@ -113,7 +113,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             3,
       review_text:        "It was okay. Nothing particularly amazing or terrible. Service was decent, place was clean. Average experience overall. Might try again sometime.",
       review_date:        dAgo(140),
-      status:             "published",
+      status:             "responded",
       published_response: "Thank you for visiting, David! We appreciate your honest feedback. We're always working to go above 'average' — hope to impress you more on your next visit!",
       published_at:       dAgo(138),
     },
@@ -125,7 +125,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             5,
       review_text:        "Been coming here for over 3 years and it just keeps getting better. Always consistent, always professional. My whole family loves this place. You've earned a lifelong customer!",
       review_date:        dAgo(130),
-      status:             "published",
+      status:             "responded",
       published_response: "Patricia, thank you for your incredible loyalty over the years! Customers like you are why we do what we do. We look forward to many more years serving you and your family!",
       published_at:       dAgo(128),
     },
@@ -151,7 +151,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             5,
       review_text:        "शानदार अनुभव! सब कुछ बेहतरीन था — सर्विस, क्वालिटी, staff का behaviour। पैसे बिल्कुल वसूल हो गए। हर बार आना अच्छा लगता है।",
       review_date:        dAgo(115),
-      status:             "published",
+      status:             "responded",
       published_response: "सुनीता जी, आपका बहुत-बहुत शुक्रिया! आपकी तारीफ सुनकर हमारी पूरी team को बहुत अच्छा लगा। जल्द ही फिर से मिलते हैं!",
       published_at:       dAgo(113),
     },
@@ -163,7 +163,7 @@ export function getMockReviews(businessId: string): ReviewInsert[] {
       rating:             4,
       review_text:        "Overall accha experience tha. Staff friendly tha aur service bhi theek thi. Bas thodi si waiting thi but end mein worth it laga.",
       review_date:        dAgo(110),
-      status:             "published",
+      status:             "responded",
       published_response: "Thank you, Sneha! We're glad you had a good experience overall. We're working on reducing wait times and hope to make your next visit even smoother!",
       published_at:       dAgo(108),
     },

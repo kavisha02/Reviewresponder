@@ -65,12 +65,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const allReviews = reviews ?? [];
 
-  // ── Stats ──────────────────────────────────────────────────────────────
+  // ── Stats ─────────────────────────────────────────────────────────────
   const totalReviews   = allReviews.length;
   const avgRating      = totalReviews > 0
     ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
     : "—";
-  const responded      = allReviews.filter((r) => r.status === "published").length;
+  const responded      = allReviews.filter((r) => r.status === "responded").length;
   const responseRate   = totalReviews > 0
     ? Math.round((responded / totalReviews) * 100)
     : 0;

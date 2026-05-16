@@ -85,7 +85,7 @@ export async function GET(
       ? (userReviewsArray.reduce((sum, r) => sum + r.rating, 0) / userReviewsArray.length).toFixed(1)
       : 0;
 
-    const userPublishedCount = userReviewsArray.filter((r) => r.status === "published").length;
+    const userPublishedCount = userReviewsArray.filter((r) => r.status === "responded").length;
     const userResponseRate = userReviewsArray.length > 0
       ? Math.round((userPublishedCount / userReviewsArray.length) * 100)
       : 0;

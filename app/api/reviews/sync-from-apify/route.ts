@@ -112,7 +112,7 @@ export async function POST(request: Request) {
           .update({
             owner_response: review.owner_response,
             owner_response_date: review.owner_response_date,
-            status: "published"
+            status: "responded"
           })
           .eq("business_id", businessId)
           .eq("external_id", review.external_id);

@@ -56,7 +56,7 @@ export default async function ExportPage({ searchParams }: PageProps) {
     : 0;
   const avgRating = avgRatingNum.toFixed(1);
 
-  const responded     = all.filter((r) => r.status === "published").length;
+  const responded     = all.filter((r) => r.status === "responded").length;
   const responseRate  = total > 0 ? Math.round((responded / total) * 100) : 0;
 
   const thirtyAgo     = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -121,7 +121,7 @@ export default async function ExportPage({ searchParams }: PageProps) {
     .slice(0, 10);
 
   // Published responses
-  const publishedReviews = all.filter((r) => r.status === "published");
+  const publishedReviews = all.filter((r) => r.status === "responded");
 
   // Fetch cached analyses
   const [categoryCache, sentimentCache, insightsCache, summaryCache] = await Promise.all([

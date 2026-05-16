@@ -27,7 +27,7 @@ export interface Review {
   rating: number;
   review_text: string | null;
   review_date: string | null;
-  status: "new" | "draft" | "published" | "ignored";
+  status: "new" | "draft" | "responded" | "ignored";
   draft_response: string | null;
   published_response: string | null;
   published_at: string | null;
