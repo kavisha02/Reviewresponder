@@ -42,7 +42,6 @@ interface HeadToHeadComparisonProps {
   competitorId: string;
   businessId: string;
   competitorName: string;
-  onRemove?: () => void;
   onRefresh?: () => void;
 }
 
@@ -77,7 +76,6 @@ export default function HeadToHeadComparison({
   competitorId,
   businessId,
   competitorName,
-  onRemove,
   onRefresh,
 }: HeadToHeadComparisonProps) {
   const [data, setData] = useState<HeadToHeadData | null>(null);
@@ -166,23 +164,13 @@ export default function HeadToHeadComparison({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">Head-to-Head Comparison</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200"
-          >
-            {syncing ? "Syncing..." : "Refresh"}
-          </button>
-          {onRemove && (
-            <button
-              onClick={onRemove}
-              className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-700/50 rounded-lg text-sm font-medium transition-all duration-200"
-            >
-              Remove
-            </button>
-          )}
-        </div>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200"
+        >
+          {syncing ? "Syncing..." : "Refresh"}
+        </button>
       </div>
 
       {/* Metrics Cards */}

@@ -250,6 +250,17 @@ export default function HeadToHeadPage() {
                             </button>
                             <button
                               onClick={() => {
+                                if (confirm("Are you sure you want to remove this competitor?")) {
+                                  handleRemoveCompetitor();
+                                }
+                              }}
+                              className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-300 hover:text-red-200 rounded text-xs font-medium transition-all duration-200 border border-red-700/50"
+                              title="Remove competitor"
+                            >
+                              🗑 Remove
+                            </button>
+                            <button
+                              onClick={() => {
                                 setSelectedCompetitorId(competitor.id);
                                 setView("comparison");
                               }}
@@ -332,7 +343,6 @@ export default function HeadToHeadPage() {
                 competitorId={selectedCompetitor.id}
                 businessId={businessId}
                 competitorName={selectedCompetitor.competitor_name}
-                onRemove={handleRemoveCompetitor}
                 onRefresh={fetchCompetitors}
               />
             ) : null}
