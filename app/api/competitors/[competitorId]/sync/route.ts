@@ -134,17 +134,20 @@ export async function POST(
         }
       }
 
-      // Update reviews with sentiment data
+      // Batch update reviews with sentiment data
       console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
-      for (const review of reviewsWithSentiment) {
-        await supabase
-          .from("competitor_reviews")
-          .update({
-            sentiment: review.sentiment,
-            topics: review.topics,
-          })
-          .eq("competitor_benchmark_id", competitorId)
-          .eq("external_id", review.external_id);
+      if (reviewsWithSentiment.length > 0) {
+        const updatePromises = reviewsWithSentiment.map((review) =>
+          supabase
+            .from("competitor_reviews")
+            .update({
+              sentiment: review.sentiment,
+              topics: review.topics,
+            })
+            .eq("competitor_benchmark_id", competitorId)
+            .eq("external_id", review.external_id)
+        );
+        await Promise.all(updatePromises);
       }
     }
 
@@ -170,15 +173,18 @@ export async function POST(
     // Extract topics from all reviews
     const topicAnalysis = await extractTopicsFromReviews(allReviews as CompetitorReview[]);
 
-    // Update topics
-    if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
-      // Delete old topics
-      await supabase
-        .from("competitor_topics")
-        .delete()
-        .eq("competitor_benchmark_id", competitorId);
+    // Batch all final database operations
+    const finalOperations = [];
 
-      // Insert new topics
+    // Delete old topics and insert new ones
+    if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
+      finalOperations.push(
+        supabase
+          .from("competitor_topics")
+          .delete()
+          .eq("competitor_benchmark_id", competitorId)
+      );
+
       const topicsToInsert = topicAnalysis.topics.map((t) => ({
         competitor_benchmark_id: competitorId,
         topic: t.topic,
@@ -186,37 +192,46 @@ export async function POST(
         sentiment_score: t.sentiment_score,
       }));
 
-      await supabase
-        .from("competitor_topics")
-        .insert(topicsToInsert);
+      finalOperations.push(
+        supabase
+          .from("competitor_topics")
+          .insert(topicsToInsert)
+      );
     }
 
     // Create snapshot for trend tracking
-    await supabase
-      .from("competitor_snapshots")
-      .insert({
-        competitor_benchmark_id: competitorId,
-        avg_rating: competitor.avg_rating,
-        total_reviews: allReviewsArray.length,
-        response_rate: responseRate,
-        positive_count: sentimentCounts.positive,
-        mixed_count: sentimentCounts.mixed,
-        negative_count: sentimentCounts.negative,
-        reviews_last_30_days: allReviewsArray.length,
-      });
+    finalOperations.push(
+      supabase
+        .from("competitor_snapshots")
+        .insert({
+          competitor_benchmark_id: competitorId,
+          avg_rating: competitor.avg_rating,
+          total_reviews: allReviewsArray.length,
+          response_rate: responseRate,
+          positive_count: sentimentCounts.positive,
+          mixed_count: sentimentCounts.mixed,
+          negative_count: sentimentCounts.negative,
+          reviews_last_30_days: allReviewsArray.length,
+        })
+    );
 
     // Update competitor benchmark
-    await supabase
-      .from("competitor_benchmarks")
-      .update({
-        total_reviews: allReviewsArray.length,
-        positive_count: sentimentCounts.positive,
-        mixed_count: sentimentCounts.mixed,
-        negative_count: sentimentCounts.negative,
-        response_rate: responseRate,
-        last_synced_at: new Date().toISOString(),
-      })
-      .eq("id", competitorId);
+    finalOperations.push(
+      supabase
+        .from("competitor_benchmarks")
+        .update({
+          total_reviews: allReviewsArray.length,
+          positive_count: sentimentCounts.positive,
+          mixed_count: sentimentCounts.mixed,
+          negative_count: sentimentCounts.negative,
+          response_rate: responseRate,
+          last_synced_at: new Date().toISOString(),
+        })
+        .eq("id", competitorId)
+    );
+
+    // Execute all final operations in parallel
+    await Promise.all(finalOperations);
 
     console.log(`Sync completed. Added ${reviewsAdded} new reviews`);
 
