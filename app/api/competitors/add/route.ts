@@ -140,100 +140,117 @@ export async function POST(request: Request) {
       console.log(`Successfully inserted ${reviewsToInsert.length} reviews`);
       console.log(`Inserted data sample:`, insertedData?.[0]);
 
-      // Analyze sentiment for each review
-      console.log(`Analyzing sentiment for ${apifyReviews.length} reviews...`);
-      const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
+      // Analyze sentiment for each review (non-blocking - don't wait)
+      console.log(`Starting sentiment analysis for ${apifyReviews.length} reviews...`);
 
-      for (const review of apifyReviews) {
+      // Run sentiment analysis in background without blocking
+      (async () => {
         try {
-          console.log(`Analyzing review: ${review.reviewId || review.id}`);
-          const sentiment = await analyzeSingleReviewSentiment(review.text || "");
-          console.log(`Sentiment result:`, sentiment);
-          reviewsWithSentiment.push({
-            external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
-            sentiment: sentiment.sentiment,
-            topics: sentiment.topics,
-          });
-        } catch (error) {
-          console.error("Error analyzing review sentiment:", error);
-          reviewsWithSentiment.push({
-            external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
-            sentiment: "mixed",
-            topics: [],
-          });
-        }
-      }
+          const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
 
-      // Update reviews with sentiment data
-      console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
-      for (const review of reviewsWithSentiment) {
-        await supabase
-          .from("competitor_reviews")
-          .update({
-            sentiment: review.sentiment,
-            topics: review.topics,
-          })
-          .eq("competitor_benchmark_id", competitor.id)
-          .eq("external_id", review.external_id);
-      }
-
-      // Extract topics from all reviews
-      try {
-        console.log(`Extracting topics from reviews...`);
-        const topicAnalysis = await extractTopicsFromReviews(
-          reviewsToInsert as CompetitorReview[]
-        );
-        console.log(`Topic analysis result:`, topicAnalysis);
-
-        // Store topics
-        if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
-          console.log(`Found ${topicAnalysis.topics.length} topics`);
-          const topicsToInsert = topicAnalysis.topics.map((t) => ({
-            competitor_benchmark_id: competitor.id,
-            topic: t.topic,
-            mention_count: t.mention_count,
-            sentiment_score: t.sentiment_score,
-          }));
-
-          const { error: topicError } = await supabase
-            .from("competitor_topics")
-            .insert(topicsToInsert);
-
-          if (topicError) {
-            console.error("Error inserting topics:", topicError);
-          } else {
-            console.log(`Inserted ${topicsToInsert.length} topics`);
+          for (const review of apifyReviews) {
+            try {
+              console.log(`Analyzing review: ${review.reviewId || review.id}`);
+              const sentiment = await analyzeSingleReviewSentiment(review.text || "");
+              console.log(`Sentiment result:`, sentiment);
+              reviewsWithSentiment.push({
+                external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+                sentiment: sentiment.sentiment,
+                topics: sentiment.topics,
+              });
+            } catch (error) {
+              console.error("Error analyzing review sentiment:", error);
+              reviewsWithSentiment.push({
+                external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+                sentiment: "mixed",
+                topics: [],
+              });
+            }
           }
-        } else {
-          console.log(`No topics found in analysis`);
+
+          // Update reviews with sentiment data
+          console.log(`Updating ${reviewsWithSentiment.length} reviews with sentiment data`);
+          for (const review of reviewsWithSentiment) {
+            await supabase
+              .from("competitor_reviews")
+              .update({
+                sentiment: review.sentiment,
+                topics: review.topics,
+              })
+              .eq("competitor_benchmark_id", competitor.id)
+              .eq("external_id", review.external_id);
+          }
+
+          // Extract topics from all reviews
+          try {
+            console.log(`Extracting topics from reviews...`);
+            const topicAnalysis = await extractTopicsFromReviews(
+              reviewsToInsert as CompetitorReview[]
+            );
+            console.log(`Topic analysis result:`, topicAnalysis);
+
+            // Store topics
+            if (topicAnalysis.topics && topicAnalysis.topics.length > 0) {
+              console.log(`Found ${topicAnalysis.topics.length} topics`);
+              const topicsToInsert = topicAnalysis.topics.map((t) => ({
+                competitor_benchmark_id: competitor.id,
+                topic: t.topic,
+                mention_count: t.mention_count,
+                sentiment_score: t.sentiment_score,
+              }));
+
+              const { error: topicError } = await supabase
+                .from("competitor_topics")
+                .insert(topicsToInsert);
+
+              if (topicError) {
+                console.error("Error inserting topics:", topicError);
+              } else {
+                console.log(`Inserted ${topicsToInsert.length} topics`);
+              }
+            } else {
+              console.log(`No topics found in analysis`);
+            }
+          } catch (error) {
+            console.error("Error extracting topics:", error);
+          }
+
+          // Calculate sentiment breakdown
+          const sentimentCounts = {
+            positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
+            mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
+            negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
+          };
+
+          console.log(`Sentiment breakdown:`, sentimentCounts);
+
+          // Update competitor benchmark with sentiment data
+          await supabase
+            .from("competitor_benchmarks")
+            .update({
+              positive_count: sentimentCounts.positive,
+              mixed_count: sentimentCounts.mixed,
+              negative_count: sentimentCounts.negative,
+            })
+            .eq("id", competitor.id);
+
+          console.log(`Background sentiment analysis completed`);
+        } catch (error) {
+          console.error("Background sentiment analysis failed:", error);
         }
-      } catch (error) {
-        console.error("Error extracting topics:", error);
-      }
+      })();
 
-      // Calculate sentiment breakdown
-      const sentimentCounts = {
-        positive: reviewsWithSentiment.filter((r) => r.sentiment === "positive").length,
-        mixed: reviewsWithSentiment.filter((r) => r.sentiment === "mixed").length,
-        negative: reviewsWithSentiment.filter((r) => r.sentiment === "negative").length,
-      };
-
-      console.log(`Sentiment breakdown:`, sentimentCounts);
-
-      // Calculate average rating from reviews
+      // Calculate average rating from reviews (do this immediately)
       const avgRating = reviewsToInsert.length > 0
         ? (reviewsToInsert.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewsToInsert.length).toFixed(2)
         : null;
 
       console.log(`Average rating: ${avgRating}`);
 
-      // Update competitor benchmark with sentiment data and metrics
+      // Update competitor benchmark with metrics (do this immediately)
       await supabase
         .from("competitor_benchmarks")
         .update({
-          positive_count: sentimentCounts.positive,
-          mixed_count: sentimentCounts.mixed,
-          negative_count: sentimentCounts.negative,
           avg_rating: avgRating ? parseFloat(avgRating) : null,
           total_reviews: reviewsToInsert.length,
         })
