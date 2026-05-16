@@ -190,6 +190,7 @@ export async function POST(
         topic: t.topic,
         mention_count: t.mention_count,
         sentiment_score: t.sentiment_score,
+        user_id: user.id,
       }));
 
       finalOperations.push(
@@ -212,6 +213,7 @@ export async function POST(
           mixed_count: sentimentCounts.mixed,
           negative_count: sentimentCounts.negative,
           reviews_last_30_days: allReviewsArray.length,
+          user_id: user.id,
         })
     );
 
