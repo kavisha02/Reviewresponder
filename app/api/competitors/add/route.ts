@@ -12,7 +12,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkCompetitorLimit } from "@/lib/competitors/tier-check";
 import { fetchCompetitorReviewsFromApify, transformApifyReviewToCompetitorReview } from "@/lib/competitors/apify-reviews";
-import { extractTopicsFromReviews, analyzeSingleReviewSentiment } from "@/lib/competitors/gemini-analysis";
+import { extractTopicsFromReviews, analyzeBatchReviewSentiment } from "@/lib/competitors/gemini-analysis";
 import { CompetitorReview } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -148,23 +148,42 @@ export async function POST(request: Request) {
         try {
           const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
 
-          for (const review of apifyReviews) {
+          // Group reviews into chunks of 10 to avoid payload limits and spread out rate limits
+          const chunkSize = 10;
+          for (let i = 0; i < apifyReviews.length; i += chunkSize) {
+            const chunk = apifyReviews.slice(i, i + chunkSize);
+            console.log(`Analyzing sentiment for chunk ${i / chunkSize + 1} of ${Math.ceil(apifyReviews.length / chunkSize)}...`);
+            
+            const batchInput = chunk.map(r => ({
+              id: r.reviewId || r.id || `apify_${r.publishedAtDate}`,
+              text: r.text || "",
+              rating: r.stars || r.rating
+            }));
+
             try {
-              console.log(`Analyzing review: ${review.reviewId || review.id}`);
-              const sentiment = await analyzeSingleReviewSentiment(review.text || "");
-              console.log(`Sentiment result:`, sentiment);
-              reviewsWithSentiment.push({
-                external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
-                sentiment: sentiment.sentiment,
-                topics: sentiment.topics,
-              });
+              const batchResults = await analyzeBatchReviewSentiment(batchInput);
+              
+              for (const result of batchResults) {
+                reviewsWithSentiment.push({
+                  external_id: result.id,
+                  sentiment: result.sentiment,
+                  topics: result.topics || [],
+                });
+              }
             } catch (error) {
-              console.error("Error analyzing review sentiment:", error);
-              reviewsWithSentiment.push({
-                external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
-                sentiment: "mixed",
-                topics: [],
-              });
+              console.error("Error analyzing batch sentiment:", error);
+              for (const r of batchInput) {
+                reviewsWithSentiment.push({
+                  external_id: r.id,
+                  sentiment: "mixed",
+                  topics: [],
+                });
+              }
+            }
+
+            // Wait 5 seconds between chunks to stay well within 15 RPM free tier limit
+            if (i + chunkSize < apifyReviews.length) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
             }
           }
 

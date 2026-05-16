@@ -6,7 +6,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { CompetitorReview } from "@/lib/types";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 export interface TopicAnalysis {
   topics: Array<{
@@ -131,6 +131,65 @@ Return ONLY valid JSON in this exact format:
   } catch (error) {
     console.error("Error analyzing review sentiment:", error);
     return { sentiment: "mixed", topics: [] };
+  }
+}
+
+export async function analyzeBatchReviewSentiment(
+  reviews: Array<{ id: string; text: string; rating?: number }>
+): Promise<Array<{ id: string; sentiment: "positive" | "mixed" | "negative"; topics: string[] }>> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured");
+  }
+
+  // Filter out reviews with no text and infer their sentiment directly
+  const textReviews = reviews.filter(r => r.text && r.text.trim() !== "");
+  const inferredResults = reviews.filter(r => !r.text || r.text.trim() === "").map(r => {
+    const sentiment = r.rating ? (r.rating >= 4 ? "positive" : r.rating === 3 ? "mixed" : "negative") : "mixed";
+    return { id: r.id, sentiment: sentiment as "positive" | "mixed" | "negative", topics: [] };
+  });
+
+  if (textReviews.length === 0) {
+    return inferredResults;
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+  const prompt = `Analyze these customer reviews and determine for each:
+1. Overall sentiment (positive, mixed, or negative)
+2. Top 2-3 topics/themes mentioned
+
+Reviews:
+${textReviews.map(r => `[ID: ${r.id}] Rating: ${r.rating || "N/A"} - "${r.text}"`).join("\n\n")}
+
+Return ONLY valid JSON array in this exact format, with NO Markdown formatting or other text:
+[
+  { "id": "id1", "sentiment": "positive", "topics": ["friendly staff", "clean"] },
+  { "id": "id2", "sentiment": "negative", "topics": ["slow service"] }
+]`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error("No JSON array found in Gemini batch response.");
+      return [
+        ...inferredResults,
+        ...textReviews.map(r => ({ id: r.id, sentiment: "mixed" as const, topics: [] }))
+      ];
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return [...inferredResults, ...parsed];
+  } catch (error) {
+    console.error("Error analyzing batch review sentiment:", error);
+    return [
+      ...inferredResults,
+      ...textReviews.map(r => ({ id: r.id, sentiment: "mixed" as const, topics: [] }))
+    ];
   }
 }
 

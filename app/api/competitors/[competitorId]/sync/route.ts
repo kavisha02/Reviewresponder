@@ -9,7 +9,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCompetitorReviewsFromApify, transformApifyReviewToCompetitorReview } from "@/lib/competitors/apify-reviews";
-import { extractTopicsFromReviews, analyzeSingleReviewSentiment } from "@/lib/competitors/gemini-analysis";
+import { extractTopicsFromReviews, analyzeBatchReviewSentiment } from "@/lib/competitors/gemini-analysis";
 import { CompetitorReview } from "@/lib/types";
 
 export async function POST(
@@ -116,21 +116,41 @@ export async function POST(
       console.log(`Analyzing sentiment for ${reviewsToInsert.length} reviews...`);
       const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
 
-      for (const review of reviewsToInsert) {
+      const chunkSize = 10;
+      for (let i = 0; i < reviewsToInsert.length; i += chunkSize) {
+        const chunk = reviewsToInsert.slice(i, i + chunkSize);
+        console.log(`Analyzing sentiment for chunk ${i / chunkSize + 1} of ${Math.ceil(reviewsToInsert.length / chunkSize)}...`);
+        
+        const batchInput = chunk.map(r => ({
+          id: r.external_id || "",
+          text: r.review_text || "",
+          rating: r.rating
+        }));
+
         try {
-          const sentiment = await analyzeSingleReviewSentiment(review.review_text || "", review.rating);
-          reviewsWithSentiment.push({
-            external_id: review.external_id,
-            sentiment: sentiment.sentiment,
-            topics: sentiment.topics,
-          });
+          const batchResults = await analyzeBatchReviewSentiment(batchInput);
+          
+          for (const result of batchResults) {
+            reviewsWithSentiment.push({
+              external_id: result.id,
+              sentiment: result.sentiment,
+              topics: result.topics || [],
+            });
+          }
         } catch (error) {
-          console.error("Error analyzing review sentiment:", error);
-          reviewsWithSentiment.push({
-            external_id: review.external_id,
-            sentiment: "mixed",
-            topics: [],
-          });
+          console.error("Error analyzing batch sentiment:", error);
+          for (const r of batchInput) {
+            reviewsWithSentiment.push({
+              external_id: r.id,
+              sentiment: "mixed",
+              topics: [],
+            });
+          }
+        }
+
+        // Wait 5 seconds between chunks to stay well within 15 RPM free tier limit
+        if (i + chunkSize < reviewsToInsert.length) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
       }
 
