@@ -639,12 +639,9 @@ export default function HeadToHeadComparison({
           <div className="space-y-2">
             {data.competitor.topTopics.length > 0 ? (
               data.competitor.topTopics.map((topic, idx) => (
-                <div key={idx} className="flex items-center justify-between text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <span className="text-indigo-400">•</span>
-                    <span>{topic.topic}</span>
-                  </div>
-                  <span className="text-xs text-slate-500">{topic.mentions} mentions</span>
+                <div key={idx} className="flex items-center gap-2 text-slate-300">
+                  <span className="text-indigo-400">•</span>
+                  <span>{topic.topic}</span>
                 </div>
               ))
             ) : (
