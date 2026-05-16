@@ -85,7 +85,7 @@ export default function HeadToHeadComparison({
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [insightsGenerated, setInsightsGenerated] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
-  const [syncCount, setSyncCount] = useState(50);
+  const [syncCount, setSyncCount] = useState(1);
   const [generatingSentiment, setGeneratingSentiment] = useState(false);
   const [sentimentGenerated, setSentimentGenerated] = useState(false);
   const [generatingTopics, setGeneratingTopics] = useState(false);
@@ -753,32 +753,16 @@ export default function HeadToHeadComparison({
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
             <h2 className="text-lg font-bold text-white mb-2">Sync More Reviews</h2>
             <p className="text-slate-400 text-sm mb-6">
-              Enter the number of reviews you want to sync (1-100). More reviews provide better analysis.
+              Select how many reviews to fetch (1–100).
             </p>
 
             <div className="space-y-4">
-              {/* Input */}
-              <div>
-                <label htmlFor="sync-count" className="block text-sm font-medium text-slate-300 mb-2">
-                  Number of Reviews
-                </label>
-                <input
-                  id="sync-count"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={syncCount}
-                  onChange={(e) => {
-                    const val = Math.min(Math.max(parseInt(e.target.value) || 1, 1), 100);
-                    setSyncCount(val);
-                  }}
-                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
-                <p className="text-xs text-slate-500 mt-1">Maximum: 100 reviews</p>
-              </div>
-
               {/* Slider */}
               <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-slate-300">Number of Reviews</label>
+                  <span className="text-sm font-bold text-indigo-400">{syncCount}</span>
+                </div>
                 <input
                   type="range"
                   min="1"
@@ -787,13 +771,10 @@ export default function HeadToHeadComparison({
                   onChange={(e) => setSyncCount(parseInt(e.target.value))}
                   className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
-              </div>
-
-              {/* Info */}
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-3">
-                <p className="text-sm text-slate-300">
-                  <strong>Syncing:</strong> {syncCount} review{syncCount !== 1 ? "s" : ""}
-                </p>
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>1</span>
+                  <span>100</span>
+                </div>
               </div>
 
               {/* Buttons */}
@@ -810,7 +791,7 @@ export default function HeadToHeadComparison({
                   disabled={syncing}
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                 >
-                  {syncing ? "Syncing..." : "Sync Reviews"}
+                  {syncing ? "Syncing..." : `Sync ${syncCount} Review${syncCount !== 1 ? "s" : ""}`}
                 </button>
               </div>
             </div>
