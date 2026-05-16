@@ -62,7 +62,7 @@ export default function ExportReportClient({ reportData }: Props) {
   const [selectedSections, setSelectedSections] = useState<Set<string>>(
     new Set(SECTIONS.filter((s) => s.default).map((s) => s.id))
   );
-  const [format, setFormat] = useState<"pdf" | "word">("pdf");
+  const [format, setFormat] = useState<"pdf">("pdf");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -115,55 +115,12 @@ export default function ExportReportClient({ reportData }: Props) {
     }
   };
 
-  const generateWord = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/export/word", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessId: reportData.business.id,
-          sections: Array.from(selectedSections),
-          data: reportData,
-        }),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        setError(error.error || "Failed to generate Word document");
-        setLoading(false);
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${reportData.business.name}-report.docx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Word generation error:", err);
-      setError("Failed to generate Word document");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDownload = () => {
     if (selectedSections.size === 0) {
       setError("Please select at least one section");
       return;
     }
-
-    if (format === "pdf") {
-      generatePDF();
-    } else {
-      generateWord();
-    }
+    generatePDF();
   };
 
   return (
@@ -502,35 +459,6 @@ export default function ExportReportClient({ reportData }: Props) {
         </div>
       </div>
 
-      {/* Format Selection */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Export Format</h2>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-3 p-3 bg-slate-900/50 border-2 rounded-lg cursor-pointer transition-all" style={{ borderColor: format === "pdf" ? "#4f46e5" : "#475569" }}>
-            <input
-              type="radio"
-              name="format"
-              value="pdf"
-              checked={format === "pdf"}
-              onChange={(e) => setFormat(e.target.value as "pdf" | "word")}
-              className="w-4 h-4 cursor-pointer"
-            />
-            <span className="text-sm text-slate-300">PDF Document</span>
-          </label>
-          <label className="flex items-center gap-3 p-3 bg-slate-900/50 border-2 rounded-lg cursor-pointer transition-all" style={{ borderColor: format === "word" ? "#4f46e5" : "#475569" }}>
-            <input
-              type="radio"
-              name="format"
-              value="word"
-              checked={format === "word"}
-              onChange={(e) => setFormat(e.target.value as "pdf" | "word")}
-              className="w-4 h-4 cursor-pointer"
-            />
-            <span className="text-sm text-slate-300">Word Document (.docx)</span>
-          </label>
-        </div>
-      </div>
-
       {/* Error */}
       {error && (
         <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 text-red-300 text-sm">
@@ -544,7 +472,7 @@ export default function ExportReportClient({ reportData }: Props) {
         disabled={loading || selectedSections.size === 0}
         className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-200"
       >
-        {loading ? "Generating..." : `Download ${format.toUpperCase()} Report`}
+        {loading ? "Generating..." : "Download PDF Report"}
       </button>
     </div>
   );
