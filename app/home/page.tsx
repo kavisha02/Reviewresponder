@@ -117,6 +117,17 @@ export default async function HomePage() {
       border:      "hover:border-amber-700/60",
     },
     {
+      href:        hasBusinesses ? `/dashboard/competitors/overview?business=${firstBizId}` : "/dashboard/setup",
+      icon:        "📈",
+      iconBg:      "from-rose-500 to-pink-600",
+      title:       "Competitor Overview",
+      description: "Track all competitors at once — rankings, trends, and AI-powered growth recommendations.",
+      cta:         "View Overview →",
+      badge:       null,
+      badgeColor:  "",
+      border:      "hover:border-rose-700/60",
+    },
+    {
       href:        hasBusinesses ? `/dashboard/export?business=${firstBizId}` : "/dashboard/setup",
       icon:        "📄",
       iconBg:      "from-slate-500 to-zinc-600",
