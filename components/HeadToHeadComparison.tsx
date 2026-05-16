@@ -82,6 +82,8 @@ export default function HeadToHeadComparison({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [generatingInsights, setGeneratingInsights] = useState(false);
+  const [insightsGenerated, setInsightsGenerated] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -123,11 +125,40 @@ export default function HeadToHeadComparison({
       }
 
       await fetchData();
+      setInsightsGenerated(false); // Reset insights when new reviews are synced
       onRefresh?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sync");
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function handleGenerateInsights() {
+    setGeneratingInsights(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/competitors/${competitorId}/generate-insights`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setError(result.error || "Failed to generate insights");
+        setGeneratingInsights(false);
+        return;
+      }
+
+      // Update data with new insights
+      setData((prevData) => prevData ? { ...prevData, insights: result.insights } : null);
+      setInsightsGenerated(true);
+      setGeneratingInsights(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate insights");
+      setGeneratingInsights(false);
     }
   }
 
@@ -463,7 +494,7 @@ export default function HeadToHeadComparison({
       </div>
 
       {/* Competitive Insights */}
-      {data.insights.length > 0 && (
+      {data.insights.length > 0 && insightsGenerated ? (
         <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-6">
           <h4 className="font-semibold text-white mb-4">💡 Competitive Insights</h4>
           <ul className="space-y-2">
@@ -475,7 +506,25 @@ export default function HeadToHeadComparison({
             ))}
           </ul>
         </div>
-      )}
+      ) : !insightsGenerated ? (
+        <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="text-white font-semibold mb-2">🤖 AI-Powered Competitive Insights</h4>
+              <p className="text-slate-400 text-sm">
+                Get AI-generated insights comparing your business with competitors. Discover your competitive advantages, areas to improve, and actionable recommendations based on customer sentiment and review patterns.
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateInsights}
+              disabled={generatingInsights}
+              className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap"
+            >
+              {generatingInsights ? "Generating..." : "Generate Insights"}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Recent Reviews */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
