@@ -43,3 +43,16 @@ CREATE POLICY "Users can insert their own competitor reviews"
       SELECT id FROM competitor_benchmarks WHERE user_id = auth.uid()
     )
   );
+
+CREATE POLICY "Users can update their own competitor reviews"
+  ON competitor_reviews FOR UPDATE
+  USING (
+    competitor_benchmark_id IN (
+      SELECT id FROM competitor_benchmarks WHERE user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    competitor_benchmark_id IN (
+      SELECT id FROM competitor_benchmarks WHERE user_id = auth.uid()
+    )
+  );

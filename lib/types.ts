@@ -94,5 +94,7 @@ export interface CompetitorReview {
   review_date: string | null;
   sentiment: "positive" | "mixed" | "negative" | null;
   topics: string[] | null;
+  owner_response: string | null;
+  owner_response_date: string | null;
   created_at: string;
 }
