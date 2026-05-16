@@ -9,7 +9,6 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateHeadToHeadInsights } from "@/lib/competitors/gemini-analysis";
 
 export async function GET(
   request: Request,
@@ -123,27 +122,8 @@ export async function GET(
       .sort((a, b) => new Date(b.review_date || 0).getTime() - new Date(a.review_date || 0).getTime())
       .slice(0, 5);
 
-    // Generate insights
-    const insights = await generateHeadToHeadInsights(
-      {
-        name: business.name,
-        avgRating: parseFloat(userAvgRating as string),
-        totalReviews: userReviewsArray.length,
-        responseRate: userResponseRate,
-        positiveCount: userSentimentCounts.positive,
-        negativeCount: userSentimentCounts.negative,
-        topTopics: userTopTopics,
-      },
-      {
-        name: competitor.competitor_name,
-        avgRating: competitor.avg_rating || 0,
-        totalReviews: competitor.total_reviews || 0,
-        responseRate: competitor.response_rate || 0,
-        positiveCount: competitor.positive_count,
-        negativeCount: competitor.negative_count,
-        topTopics: (competitorTopics || []).map((t) => t.topic),
-      }
-    );
+    // Don't generate insights on page load - user must click button
+    const insights: string[] = [];
 
     return NextResponse.json({
       yourBusiness: {
