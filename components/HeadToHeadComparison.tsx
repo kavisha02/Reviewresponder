@@ -111,15 +111,34 @@ export default function HeadToHeadComparison({
         return;
       }
 
+      // Auto-show sentiment if data already exists in DB
+      const sentimentTotal =
+        (result.competitor.sentimentBreakdown?.positive || 0) +
+        (result.competitor.sentimentBreakdown?.mixed || 0) +
+        (result.competitor.sentimentBreakdown?.negative || 0);
+      if (sentimentTotal > 0) setSentimentGenerated(true);
+
+      // Auto-show topics if data already exists in DB
+      if (result.competitor.topTopics?.length > 0) setTopicsGenerated(true);
+
+      // Load persisted insights from localStorage
+      const savedInsights = localStorage.getItem(`insights_${competitorId}`);
+      if (savedInsights) {
+        try {
+          result.insights = JSON.parse(savedInsights);
+          setInsightsGenerated(true);
+        } catch {}
+      }
+
       setData(result);
 
-      // Check if reviews count changed (new reviews synced)
+      // Check if reviews count changed (new reviews synced) — reset flags if so
       const currentTotalReviews = result.competitor.totalReviews || 0;
       if (totalReviewsOnLoad > 0 && currentTotalReviews > totalReviewsOnLoad) {
-        // New reviews were synced, reset generation flags
         setInsightsGenerated(false);
         setSentimentGenerated(false);
         setTopicsGenerated(false);
+        localStorage.removeItem(`insights_${competitorId}`);
       }
 
       // Set initial review count on first load
@@ -151,9 +170,10 @@ export default function HeadToHeadComparison({
       }
 
       await fetchData();
-      setInsightsGenerated(false); // Reset insights when new reviews are synced
+      setInsightsGenerated(false);
       setSentimentGenerated(false);
       setTopicsGenerated(false);
+      localStorage.removeItem(`insights_${competitorId}`);
       setShowSyncModal(false);
       onRefresh?.();
     } catch (err) {
@@ -181,8 +201,9 @@ export default function HeadToHeadComparison({
         return;
       }
 
-      // Update data with new insights
+      // Update data with new insights and persist to localStorage
       setData((prevData) => prevData ? { ...prevData, insights: result.insights } : null);
+      localStorage.setItem(`insights_${competitorId}`, JSON.stringify(result.insights));
       setInsightsGenerated(true);
       setGeneratingInsights(false);
     } catch (err) {
