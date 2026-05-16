@@ -255,7 +255,7 @@ export default function HeadToHeadPage() {
                               }}
                               className="text-indigo-400 text-xl cursor-pointer hover:text-indigo-300 transition-all duration-200"
                             >
-                              →
+                              Compare
                             </div>
                           </div>
                         </div>
