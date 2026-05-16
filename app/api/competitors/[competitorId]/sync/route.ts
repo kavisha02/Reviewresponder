@@ -105,22 +105,22 @@ export async function POST(
 
       console.log(`Inserted ${reviewsToInsert.length} reviews`);
 
-      // Analyze sentiment for new reviews
-      console.log(`Analyzing sentiment for ${apifyReviews.length} reviews...`);
+      // Analyze sentiment for all new reviews (only those with text)
+      console.log(`Analyzing sentiment for ${reviewsToInsert.length} reviews...`);
       const reviewsWithSentiment: Partial<CompetitorReview>[] = [];
 
-      for (const review of apifyReviews) {
+      for (const review of reviewsToInsert) {
         try {
-          const sentiment = await analyzeSingleReviewSentiment(review.text || "");
+          const sentiment = await analyzeSingleReviewSentiment(review.review_text || "", review.rating);
           reviewsWithSentiment.push({
-            external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+            external_id: review.external_id,
             sentiment: sentiment.sentiment,
             topics: sentiment.topics,
           });
         } catch (error) {
           console.error("Error analyzing review sentiment:", error);
           reviewsWithSentiment.push({
-            external_id: review.reviewId || review.id || `apify_${review.publishedAtDate}`,
+            external_id: review.external_id,
             sentiment: "mixed",
             topics: [],
           });
@@ -147,11 +147,18 @@ export async function POST(
       .select("*")
       .eq("competitor_benchmark_id", competitorId);
 
+    const allReviewsArray = allReviews || [];
     const sentimentCounts = {
-      positive: (allReviews || []).filter((r) => r.sentiment === "positive").length,
-      mixed: (allReviews || []).filter((r) => r.sentiment === "mixed").length,
-      negative: (allReviews || []).filter((r) => r.sentiment === "negative").length,
+      positive: allReviewsArray.filter((r) => r.sentiment === "positive").length,
+      mixed: allReviewsArray.filter((r) => r.sentiment === "mixed").length,
+      negative: allReviewsArray.filter((r) => r.sentiment === "negative").length,
     };
+
+    // Calculate response rate from owner responses
+    const responseCount = allReviewsArray.filter((r) => r.owner_response).length;
+    const responseRate = allReviewsArray.length > 0
+      ? Math.round((responseCount / allReviewsArray.length) * 100)
+      : 0;
 
     // Extract topics from all reviews
     const topicAnalysis = await extractTopicsFromReviews(allReviews as CompetitorReview[]);
@@ -183,22 +190,23 @@ export async function POST(
       .insert({
         competitor_benchmark_id: competitorId,
         avg_rating: competitor.avg_rating,
-        total_reviews: (allReviews || []).length,
-        response_rate: competitor.response_rate,
+        total_reviews: allReviewsArray.length,
+        response_rate: responseRate,
         positive_count: sentimentCounts.positive,
         mixed_count: sentimentCounts.mixed,
         negative_count: sentimentCounts.negative,
-        reviews_last_30_days: (allReviews || []).length,
+        reviews_last_30_days: allReviewsArray.length,
       });
 
     // Update competitor benchmark
     await supabase
       .from("competitor_benchmarks")
       .update({
-        total_reviews: (allReviews || []).length,
+        total_reviews: allReviewsArray.length,
         positive_count: sentimentCounts.positive,
         mixed_count: sentimentCounts.mixed,
         negative_count: sentimentCounts.negative,
+        response_rate: responseRate,
         last_synced_at: new Date().toISOString(),
       })
       .eq("id", competitorId);

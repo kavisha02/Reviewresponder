@@ -36,9 +36,16 @@ export async function extractTopicsFromReviews(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
+  // Include all reviews, even those with ratings only
   const reviewTexts = reviews
-    .filter((r) => r.review_text)
-    .map((r) => `"${r.review_text}"`)
+    .map((r) => {
+      if (r.review_text) {
+        return `"${r.review_text}"`;
+      }
+      // For rating-only reviews, create a synthetic description
+      const ratingDesc = r.rating >= 4 ? "positive" : r.rating === 3 ? "neutral" : "negative";
+      return `"${ratingDesc} rating"`;
+    })
     .join("\n");
 
   const prompt = `Analyze these customer reviews and extract the top 5-7 most mentioned topics/themes.
@@ -78,11 +85,21 @@ Return ONLY valid JSON in this exact format:
 }
 
 export async function analyzeSingleReviewSentiment(
-  reviewText: string
+  reviewText: string,
+  rating?: number
 ): Promise<SentimentAnalysis> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured");
+  }
+
+  // If no text, infer sentiment from rating
+  if (!reviewText || reviewText.trim() === "") {
+    if (rating) {
+      const sentiment = rating >= 4 ? "positive" : rating === 3 ? "mixed" : "negative";
+      return { sentiment: sentiment as "positive" | "mixed" | "negative", topics: [] };
+    }
+    return { sentiment: "mixed", topics: [] };
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
