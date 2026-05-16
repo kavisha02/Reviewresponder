@@ -86,6 +86,11 @@ export default function HeadToHeadComparison({
   const [insightsGenerated, setInsightsGenerated] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [syncCount, setSyncCount] = useState(50);
+  const [generatingSentiment, setGeneratingSentiment] = useState(false);
+  const [sentimentGenerated, setSentimentGenerated] = useState(false);
+  const [generatingTopics, setGeneratingTopics] = useState(false);
+  const [topicsGenerated, setTopicsGenerated] = useState(false);
+  const [totalReviewsOnLoad, setTotalReviewsOnLoad] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -102,10 +107,25 @@ export default function HeadToHeadComparison({
 
       if (!res.ok) {
         setError(result.error || "Failed to load comparison data");
+        setLoading(false);
         return;
       }
 
       setData(result);
+
+      // Check if reviews count changed (new reviews synced)
+      const currentTotalReviews = result.competitor.totalReviews || 0;
+      if (totalReviewsOnLoad > 0 && currentTotalReviews > totalReviewsOnLoad) {
+        // New reviews were synced, reset generation flags
+        setInsightsGenerated(false);
+        setSentimentGenerated(false);
+        setTopicsGenerated(false);
+      }
+
+      // Set initial review count on first load
+      if (totalReviewsOnLoad === 0) {
+        setTotalReviewsOnLoad(currentTotalReviews);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -132,6 +152,8 @@ export default function HeadToHeadComparison({
 
       await fetchData();
       setInsightsGenerated(false); // Reset insights when new reviews are synced
+      setSentimentGenerated(false);
+      setTopicsGenerated(false);
       setShowSyncModal(false);
       onRefresh?.();
     } catch (err) {
@@ -166,6 +188,62 @@ export default function HeadToHeadComparison({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate insights");
       setGeneratingInsights(false);
+    }
+  }
+
+  async function handleGenerateSentiment() {
+    if (sentimentGenerated) return;
+
+    setGeneratingSentiment(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/competitors/${competitorId}/generate-sentiment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setError(result.error || "Failed to generate sentiment");
+        setGeneratingSentiment(false);
+        return;
+      }
+
+      setSentimentGenerated(true);
+      setGeneratingSentiment(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate sentiment");
+      setGeneratingSentiment(false);
+    }
+  }
+
+  async function handleGenerateTopics() {
+    if (topicsGenerated) return;
+
+    setGeneratingTopics(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/competitors/${competitorId}/generate-topics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setError(result.error || "Failed to generate topics");
+        setGeneratingTopics(false);
+        return;
+      }
+
+      setSentimentGenerated(true);
+      setGeneratingTopics(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate topics");
+      setGeneratingTopics(false);
     }
   }
 
@@ -284,7 +362,26 @@ export default function HeadToHeadComparison({
       </div>
 
       {/* Sentiment Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {!sentimentGenerated ? (
+        <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="text-white font-semibold mb-2">📊 Sentiment Breakdown</h4>
+              <p className="text-slate-400 text-sm">
+                Analyze the emotional tone of reviews for both your business and competitors. See the distribution of positive, negative, and mixed sentiments to understand customer satisfaction levels.
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateSentiment}
+              disabled={generatingSentiment}
+              className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap"
+            >
+              {generatingSentiment ? "Analyzing..." : "Analyze Sentiment"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Your Sentiment */}
         <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-6">
           <h4 className="font-semibold text-white mb-4">Sentiment Breakdown</h4>
@@ -459,9 +556,29 @@ export default function HeadToHeadComparison({
           </div>
         </div>
       </div>
+      )}
 
       {/* Top Topics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {!topicsGenerated ? (
+        <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="text-white font-semibold mb-2">🏷️ Top Topics Analysis</h4>
+              <p className="text-slate-400 text-sm">
+                Extract and analyze the most discussed topics in reviews. Understand what customers are talking about most, their sentiment for each topic, and identify trends and pain points.
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateTopics}
+              disabled={generatingTopics}
+              className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap"
+            >
+              {generatingTopics ? "Extracting..." : "Extract Topics"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Your Topics */}
         <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-6">
           <h4 className="font-semibold text-white mb-4">Top Topics</h4>
@@ -499,6 +616,7 @@ export default function HeadToHeadComparison({
           </div>
         </div>
       </div>
+      )}
 
       {/* Competitive Insights */}
       {data.insights.length > 0 && insightsGenerated ? (
