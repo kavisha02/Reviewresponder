@@ -248,15 +248,15 @@ export default function HeadToHeadPage() {
                             >
                               ✎ Edit
                             </button>
-                            <div
+                            <button
                               onClick={() => {
                                 setSelectedCompetitorId(competitor.id);
                                 setView("comparison");
                               }}
-                              className="text-indigo-400 text-xl cursor-pointer hover:text-indigo-300 transition-all duration-200"
+                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium transition-all duration-200"
                             >
-                              Compare
-                            </div>
+                              Compare →
+                            </button>
                           </div>
                         </div>
 
