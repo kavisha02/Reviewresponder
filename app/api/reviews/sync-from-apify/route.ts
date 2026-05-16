@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       review_date: item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString(),
       owner_response: item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null,
       owner_response_date: item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null,
-      status: item.ownerResponse != null && item.ownerResponse.trim().length > 0 ? "published" : "new",
+      status: "new",
     }));
 
     // Check for duplicates before inserting
