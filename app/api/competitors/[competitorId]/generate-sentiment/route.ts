@@ -88,13 +88,23 @@ Return ONLY a JSON object with counts:
 
     const sentiment = JSON.parse(jsonMatch[0]);
 
-    return NextResponse.json({
-      sentiment: {
-        positive: sentiment.positive || 0,
-        mixed: sentiment.mixed || 0,
-        negative: sentiment.negative || 0,
-      },
-    });
+    const counts = {
+      positive: sentiment.positive || 0,
+      mixed: sentiment.mixed || 0,
+      negative: sentiment.negative || 0,
+    };
+
+    // Persist to DB so it survives navigation
+    await supabase
+      .from("competitor_benchmarks")
+      .update({
+        positive_count: counts.positive,
+        mixed_count: counts.mixed,
+        negative_count: counts.negative,
+      })
+      .eq("id", competitorId);
+
+    return NextResponse.json({ sentiment: counts });
 
   } catch (err: unknown) {
     console.error("Generate sentiment error:", err);

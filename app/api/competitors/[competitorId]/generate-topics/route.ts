@@ -91,10 +91,29 @@ Return ONLY a JSON array of topics:
     }
 
     const topics = JSON.parse(jsonMatch[0]);
+    const topicsArray = Array.isArray(topics) ? topics : [];
 
-    return NextResponse.json({
-      topics: Array.isArray(topics) ? topics : [],
-    });
+    // Persist to DB so it survives navigation
+    if (topicsArray.length > 0) {
+      await supabase
+        .from("competitor_topics")
+        .delete()
+        .eq("competitor_benchmark_id", competitorId);
+
+      await supabase
+        .from("competitor_topics")
+        .insert(
+          topicsArray.map((t: { topic: string; mention_count: number; sentiment_score: number }) => ({
+            competitor_benchmark_id: competitorId,
+            topic: t.topic,
+            mention_count: t.mention_count || 0,
+            sentiment_score: t.sentiment_score || 0,
+            user_id: user.id,
+          }))
+        );
+    }
+
+    return NextResponse.json({ topics: topicsArray });
 
   } catch (err: unknown) {
     console.error("Generate topics error:", err);
