@@ -12,6 +12,7 @@ export interface ApifyReview {
   id?: string;
   publishedAtDate?: string;
   publishedAt?: string;
+  publishAt?: string;
   date?: string;
   name?: string;
   reviewerName?: string;
@@ -27,6 +28,7 @@ export interface ApifyReview {
   content?: string;
   ownerResponse?: string;
   responseFromOwnerText?: string;
+  responseFromOwner?: string;
   ownerReply?: string;
   ownerResponseDate?: string;
   responseFromOwnerDate?: string;
@@ -85,13 +87,13 @@ export async function fetchCompetitorReviewsFromApify(
 }
 
 export function transformApifyReviewToCompetitorReview(item: ApifyReview, competitorId: string, placeId: string | null, userId?: string) {
-  const externalId = item.reviewId || item.id || `apify_${item.publishedAtDate}`;
-  const authorName = item.name || item.reviewerName || item.reviewer || item.author || "Anonymous";
-  const rating = item.stars || item.rating || 5;
-  const reviewText = item.text || item.reviewText || item.content || null;
-  const reviewDate = item.publishedAtDate || item.publishedAt || item.date || new Date().toISOString();
-  const ownerResponse = item.ownerResponse || item.responseFromOwnerText || item.ownerReply || null;
-  const ownerResponseDate = item.ownerResponseDate || item.responseFromOwnerDate || item.ownerReplyDate || null;
+  const externalId = item.reviewId || `apify_${item.publishedAtDate}`;
+  const authorName = item.name || "Anonymous";
+  const rating = item.stars || 5;
+  const reviewText = item.text || null;
+  const reviewDate = item.publishedAtDate || new Date().toISOString();
+  const ownerResponse = item.responseFromOwnerText || item.responseFromOwner || item.ownerResponse || null;
+  const ownerResponseDate = item.responseFromOwnerDate || item.ownerResponseDate || null;
 
   console.log(`Transforming review:`, {
     externalId,
