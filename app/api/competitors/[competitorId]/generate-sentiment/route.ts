@@ -78,15 +78,18 @@ Return ONLY a JSON object with counts:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json(
-        { error: "Failed to parse sentiment analysis" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to parse sentiment analysis" }, { status: 500 });
     }
 
-    const sentiment = JSON.parse(jsonMatch[0]);
+    let sentiment: { positive: number; mixed: number; negative: number };
+    try {
+      sentiment = JSON.parse(jsonMatch[0].replace(/[\r\n]+/g, " "));
+    } catch {
+      return NextResponse.json({ error: "Failed to parse sentiment response" }, { status: 500 });
+    }
 
     const counts = {
       positive: sentiment.positive || 0,

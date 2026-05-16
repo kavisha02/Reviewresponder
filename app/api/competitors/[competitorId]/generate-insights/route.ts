@@ -146,7 +146,13 @@ Return ONLY a valid JSON array of strings (3-4 items):
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    // Strip markdown code fences if present, then extract the JSON array
+    const cleaned = text
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/gi, "")
+      .trim();
+
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       return NextResponse.json(
         { error: "Failed to parse insights" },
@@ -154,8 +160,22 @@ Return ONLY a valid JSON array of strings (3-4 items):
       );
     }
 
-    const insights = JSON.parse(jsonMatch[0]);
-    const insightsArray = Array.isArray(insights) ? insights.slice(0, 4) : [];
+    // Sanitise: remove literal newlines inside string values before parsing
+    const sanitised = jsonMatch[0].replace(/[\r\n]+/g, " ");
+
+    let insights: string[];
+    try {
+      insights = JSON.parse(sanitised);
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to parse insights response" },
+        { status: 500 }
+      );
+    }
+
+    const insightsArray = Array.isArray(insights)
+      ? insights.slice(0, 4).map((s) => String(s).trim())
+      : [];
 
     // Persist to DB so they survive navigation
     await supabase

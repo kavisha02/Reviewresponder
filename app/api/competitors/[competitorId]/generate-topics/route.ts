@@ -82,15 +82,19 @@ Return ONLY a JSON array of topics:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      return NextResponse.json(
-        { error: "Failed to parse topics analysis" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to parse topics analysis" }, { status: 500 });
     }
 
-    const topics = JSON.parse(jsonMatch[0]);
+    let topics: { topic: string; mention_count: number; sentiment_score: number }[];
+    try {
+      topics = JSON.parse(jsonMatch[0].replace(/[\r\n]+/g, " "));
+    } catch {
+      return NextResponse.json({ error: "Failed to parse topics response" }, { status: 500 });
+    }
+
     const topicsArray = Array.isArray(topics) ? topics : [];
 
     // Persist to DB so it survives navigation
