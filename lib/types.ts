@@ -96,5 +96,6 @@ export interface CompetitorReview {
   topics: string[] | null;
   owner_response: string | null;
   owner_response_date: string | null;
+  user_id?: string;
   created_at: string;
 }

@@ -84,7 +84,7 @@ export async function fetchCompetitorReviewsFromApify(
   }
 }
 
-export function transformApifyReviewToCompetitorReview(item: ApifyReview, competitorId: string, placeId: string | null) {
+export function transformApifyReviewToCompetitorReview(item: ApifyReview, competitorId: string, placeId: string | null, userId?: string) {
   const externalId = item.reviewId || item.id || `apify_${item.publishedAtDate}`;
   const authorName = item.name || item.reviewerName || item.reviewer || item.author || "Anonymous";
   const rating = item.stars || item.rating || 5;
@@ -113,5 +113,6 @@ export function transformApifyReviewToCompetitorReview(item: ApifyReview, compet
     owner_response_date: ownerResponseDate,
     sentiment: "mixed" as const,
     topics: null,
+    ...(userId && { user_id: userId }),
   };
 }

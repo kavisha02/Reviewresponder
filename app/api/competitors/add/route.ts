@@ -110,7 +110,7 @@ export async function POST(request: Request) {
 
     // Transform reviews to our schema
     const reviewsToInsert: Partial<CompetitorReview>[] = apifyReviews.map((review) =>
-      transformApifyReviewToCompetitorReview(review, competitor.id, null)
+      transformApifyReviewToCompetitorReview(review, competitor.id, null, user.id)
     );
 
     console.log(`Transformed ${reviewsToInsert.length} reviews`);

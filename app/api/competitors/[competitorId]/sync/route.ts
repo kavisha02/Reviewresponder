@@ -84,7 +84,7 @@ export async function POST(
       const externalId = review.reviewId || review.id || `apify_${review.publishedAtDate}`;
 
       if (!existingIds.has(externalId)) {
-        const transformed = transformApifyReviewToCompetitorReview(review, competitorId, competitor.google_place_id);
+        const transformed = transformApifyReviewToCompetitorReview(review, competitorId, competitor.google_place_id, user.id);
         reviewsToInsert.push(transformed);
         reviewsAdded++;
       }
