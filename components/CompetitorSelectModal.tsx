@@ -19,7 +19,7 @@ export default function CompetitorSelectModal({
   tierLimit = 3,
   currentCount = 0,
 }: CompetitorSelectModalProps) {
-  const [step, setStep] = useState<"details" | "reviews">("details");
+  const [step, setStep] = useState<"details" | "preview" | "reviews">("details");
   const [competitorName, setCompetitorName] = useState("");
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [maxReviews, setMaxReviews] = useState(50);
@@ -47,7 +47,7 @@ export default function CompetitorSelectModal({
       return;
     }
 
-    setStep("reviews");
+    setStep("preview");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,17 +79,24 @@ export default function CompetitorSelectModal({
     setError("");
   }
 
+  function handlePreviewNext() {
+    setStep("reviews");
+    setError("");
+  }
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
         <h2 className="text-lg font-bold text-white mb-2">
-          {step === "details" ? "Add Competitor" : "Select Review Count"}
+          {step === "details" ? "Add Competitor" : step === "preview" ? "Review Details" : "Select Review Count"}
         </h2>
         <p className="text-slate-400 text-sm mb-6">
           {step === "details"
             ? "Enter competitor details to start tracking their reputation."
+            : step === "preview"
+            ? "Review the competitor details. You can edit the URL if needed."
             : "How many reviews should we fetch for comparison?"}
         </p>
 
@@ -163,6 +170,66 @@ export default function CompetitorSelectModal({
               </button>
             </div>
           </form>
+        ) : step === "preview" ? (
+          <form onSubmit={(e) => { e.preventDefault(); handlePreviewNext(); }} className="space-y-4">
+            {/* Competitor Name Display */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Competitor Name
+              </label>
+              <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
+                {competitorName}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Cannot be changed</p>
+            </div>
+
+            {/* Google Maps URL - Editable */}
+            <div>
+              <label htmlFor="preview-url" className="block text-sm font-medium text-slate-300 mb-1.5">
+                Google Maps URL
+              </label>
+              <input
+                id="preview-url"
+                type="url"
+                value={googleMapsUrl}
+                onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200"
+              />
+              <p className="text-xs text-slate-500 mt-1">You can edit this URL if needed</p>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-lg px-4 py-3 text-indigo-300 text-sm">
+              <p className="font-medium mb-1">✓ Details Confirmed</p>
+              <p>Ready to proceed to review count selection.</p>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 text-red-300 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setStep("details")}
+                disabled={isSubmitting}
+                className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+              >
+                ← Back
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+              >
+                Next →
+              </button>
+            </div>
+          </form>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Review Count */}
@@ -203,7 +270,7 @@ export default function CompetitorSelectModal({
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
-                onClick={handleBack}
+                onClick={() => setStep("preview")}
                 disabled={isSubmitting}
                 className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
               >
