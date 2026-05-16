@@ -126,8 +126,13 @@ export async function POST(request: Request) {
 
       if (insertError) {
         console.error("Error inserting reviews:", insertError);
+        console.error("Insert error details:", {
+          message: insertError.message,
+          code: insertError.code,
+          details: insertError.details,
+        });
         return NextResponse.json(
-          { error: "Failed to insert reviews" },
+          { error: `Failed to insert reviews: ${insertError.message}` },
           { status: 500 }
         );
       }

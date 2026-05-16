@@ -112,6 +112,6 @@ export function transformApifyReviewToCompetitorReview(item: ApifyReview, compet
     owner_response: ownerResponse,
     owner_response_date: ownerResponseDate,
     sentiment: "mixed" as const,
-    topics: [],
+    topics: null,
   };
 }
