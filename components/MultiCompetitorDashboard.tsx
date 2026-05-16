@@ -343,21 +343,13 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                               <span key={t} className="text-xs bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{t}</span>
                             ))}
                           </div>
-                          {c.topTopics.length === 0 ? (
+                          {c.topTopics.length === 0 && (
                             <button
                               onClick={() => handleGenerateTopics(c.id)}
                               disabled={generatingTopicsFor === c.id}
                               className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50 underline mt-1"
                             >
                               {generatingTopicsFor === c.id ? "Generating..." : "Generate Topics"}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleGenerateTopics(c.id)}
-                              disabled={generatingTopicsFor === c.id}
-                              className="text-xs text-slate-500 hover:text-slate-400 disabled:opacity-50 mt-1"
-                            >
-                              {generatingTopicsFor === c.id ? "Regenerating..." : "↻"}
                             </button>
                           )}
                         </td>
