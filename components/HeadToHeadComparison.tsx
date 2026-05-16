@@ -84,6 +84,8 @@ export default function HeadToHeadComparison({
   const [syncing, setSyncing] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [insightsGenerated, setInsightsGenerated] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncCount, setSyncCount] = useState(50);
 
   useEffect(() => {
     fetchData();
@@ -111,21 +113,26 @@ export default function HeadToHeadComparison({
     }
   }
 
-  async function handleSync() {
+  async function handleSync(reviewCount: number) {
     setSyncing(true);
+    setError("");
     try {
       const res = await fetch(`/api/competitors/${competitorId}/sync`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maxReviews: reviewCount }),
       });
       const result = await res.json();
 
       if (!res.ok) {
         setError(result.error || "Failed to sync");
+        setSyncing(false);
         return;
       }
 
       await fetchData();
       setInsightsGenerated(false); // Reset insights when new reviews are synced
+      setShowSyncModal(false);
       onRefresh?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sync");
@@ -196,11 +203,11 @@ export default function HeadToHeadComparison({
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">Head-to-Head Comparison</h2>
         <button
-          onClick={handleSync}
+          onClick={() => setShowSyncModal(true)}
           disabled={syncing}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200"
         >
-          {syncing ? "Syncing..." : "Refresh"}
+          {syncing ? "Syncing..." : "Sync More Reviews"}
         </button>
       </div>
 
@@ -586,6 +593,77 @@ export default function HeadToHeadComparison({
         <p className="text-xs text-slate-500 text-center">
           Last synced: {new Date(data.competitor.lastSynced).toLocaleString()}
         </p>
+      )}
+
+      {/* Sync Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+            <h2 className="text-lg font-bold text-white mb-2">Sync More Reviews</h2>
+            <p className="text-slate-400 text-sm mb-6">
+              Enter the number of reviews you want to sync (1-100). More reviews provide better analysis.
+            </p>
+
+            <div className="space-y-4">
+              {/* Input */}
+              <div>
+                <label htmlFor="sync-count" className="block text-sm font-medium text-slate-300 mb-2">
+                  Number of Reviews
+                </label>
+                <input
+                  id="sync-count"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={syncCount}
+                  onChange={(e) => {
+                    const val = Math.min(Math.max(parseInt(e.target.value) || 1, 1), 100);
+                    setSyncCount(val);
+                  }}
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                />
+                <p className="text-xs text-slate-500 mt-1">Maximum: 100 reviews</p>
+              </div>
+
+              {/* Slider */}
+              <div>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={syncCount}
+                  onChange={(e) => setSyncCount(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+              </div>
+
+              {/* Info */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-3">
+                <p className="text-sm text-slate-300">
+                  <strong>Syncing:</strong> {syncCount} review{syncCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setShowSyncModal(false)}
+                  disabled={syncing}
+                  className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSync(syncCount)}
+                  disabled={syncing}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                >
+                  {syncing ? "Syncing..." : "Sync Reviews"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

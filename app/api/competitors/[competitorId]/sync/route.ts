@@ -26,6 +26,13 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get maxReviews from request body (default to 100)
+    const body = await request.json().catch(() => ({}));
+    let maxReviews = body.maxReviews || 100;
+
+    // Validate maxReviews is between 1 and 100
+    maxReviews = Math.min(Math.max(parseInt(maxReviews) || 100, 1), 100);
+
     // Verify competitor belongs to user
     const { data: competitor } = await supabase
       .from("competitor_benchmarks")
@@ -50,7 +57,7 @@ export async function POST(
     // Fetch reviews from Apify
     let apifyReviews;
     try {
-      apifyReviews = await fetchCompetitorReviewsFromApify(competitor.google_maps_url, 100);
+      apifyReviews = await fetchCompetitorReviewsFromApify(competitor.google_maps_url, maxReviews);
       console.log(`Apify returned ${apifyReviews.length} reviews`);
     } catch (apifyError) {
       console.error("Apify fetch error:", apifyError);
