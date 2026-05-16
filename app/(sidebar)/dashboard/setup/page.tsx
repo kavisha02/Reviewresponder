@@ -1,20 +1,24 @@
 /**
  * Business Setup Page — /dashboard/setup
  *
- * Handles two cases:
- *   1. First time — user has no locations yet (redirected here from dashboard)
- *   2. Adding more — user already has locations and wants to add another
- *
- * After creating a location, redirects to /dashboard?business=<newId>
- * so the user lands directly on the newly added location.
+ * New flow:
+ *   1. Show existing locations (if any) - user can click to edit URL
+ *   2. Option to add new location
+ *   3. Form to create new location with preview step
  */
 
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+
+interface Business {
+  id: string;
+  name: string;
+  business_type: string | null;
+  google_maps_url: string | null;
+}
 
 const BUSINESS_TYPES = [
   "Restaurant / Café",
@@ -32,35 +36,46 @@ const BUSINESS_TYPES = [
 export default function SetupPage() {
   const router = useRouter();
 
-  const [name, setName]                   = useState("");
-  const [businessType, setBusinessType]   = useState("");
-  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
-  const [loading, setLoading]             = useState(false);
-  const [error, setError]                 = useState("");
-  const [urlValidating, setUrlValidating] = useState(false);
-  const [urlValid, setUrlValid]           = useState(false);
-  const [urlValidationMsg, setUrlValidationMsg] = useState("");
-  // Whether this user already has at least one location
-  const [hasExisting, setHasExisting]     = useState(false);
-  const [checkingExisting, setChecking]   = useState(true);
-  const [step, setStep]                   = useState<"details" | "preview">("details");
+  // Existing locations
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loadingBusinesses, setLoadingBusinesses] = useState(true);
 
-  // Check if user already has locations — changes the page copy
+  // Add new location form
+  const [name, setName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [urlValidating, setUrlValidating] = useState(false);
+  const [urlValid, setUrlValid] = useState(false);
+  const [urlValidationMsg, setUrlValidationMsg] = useState("");
+  const [step, setStep] = useState<"list" | "add-details" | "add-preview">("list");
+
+  // Edit existing location
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editUrl, setEditUrl] = useState("");
+  const [editUrlValidating, setEditUrlValidating] = useState(false);
+  const [editUrlValid, setEditUrlValid] = useState(false);
+  const [editUrlValidationMsg, setEditUrlValidationMsg] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Load existing businesses
   useEffect(() => {
-    async function check() {
+    async function loadBusinesses() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { count } = await supabase
+      const { data } = await supabase
         .from("businesses")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id);
+        .select("id, name, business_type, google_maps_url")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-      setHasExisting((count ?? 0) > 0);
-      setChecking(false);
+      setBusinesses(data || []);
+      setLoadingBusinesses(false);
     }
-    check();
+    loadBusinesses();
   }, []);
 
   // Validate Google Maps URL
@@ -100,7 +115,45 @@ export default function SetupPage() {
     }
   }
 
-  async function handleNext(e: React.FormEvent) {
+  // Validate edit URL
+  async function validateEditUrl() {
+    if (!editUrl.trim()) {
+      setEditUrlValidationMsg("Please enter a URL");
+      setEditUrlValid(false);
+      return;
+    }
+
+    setEditUrlValidating(true);
+    setEditUrlValidationMsg("");
+
+    try {
+      const res = await fetch("/api/validate-google-maps-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: editUrl }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEditUrlValidationMsg(data.error || "Invalid Google Maps URL");
+        setEditUrlValid(false);
+        setEditUrlValidating(false);
+        return;
+      }
+
+      setEditUrlValidationMsg(`✓ Location verified: ${data.businessName}`);
+      setEditUrlValid(true);
+      setEditUrlValidating(false);
+    } catch (err) {
+      setEditUrlValidationMsg("Failed to validate URL. Please try again.");
+      setEditUrlValid(false);
+      setEditUrlValidating(false);
+    }
+  }
+
+  // Handle add location next
+  async function handleAddNext(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -109,18 +162,19 @@ export default function SetupPage() {
       return;
     }
 
-    setStep("preview");
+    setStep("add-preview");
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Handle add location submit
+  async function handleAddSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const res = await fetch("/api/business/create", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ name, businessType, googleMapsUrl }),
+      body: JSON.stringify({ name, businessType, googleMapsUrl }),
     });
 
     const data = await res.json();
@@ -131,12 +185,72 @@ export default function SetupPage() {
       return;
     }
 
-    // Redirect to home page
-    router.push("/home");
-    router.refresh();
+    // Reload businesses and reset form
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: updatedBusinesses } = await supabase
+        .from("businesses")
+        .select("id, name, business_type, google_maps_url")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      setBusinesses(updatedBusinesses || []);
+    }
+
+    // Reset form
+    setName("");
+    setBusinessType("");
+    setGoogleMapsUrl("");
+    setUrlValid(false);
+    setUrlValidationMsg("");
+    setStep("list");
+    setLoading(false);
   }
 
-  if (checkingExisting) return null; // brief loading before showing page
+  // Handle edit location
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId) return;
+
+    setEditLoading(true);
+
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("businesses")
+      .update({ google_maps_url: editUrl })
+      .eq("id", editingId);
+
+    if (updateError) {
+      alert("Failed to update URL: " + updateError.message);
+      setEditLoading(false);
+      return;
+    }
+
+    // Reload businesses
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: updatedBusinesses } = await supabase
+        .from("businesses")
+        .select("id, name, business_type, google_maps_url")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      setBusinesses(updatedBusinesses || []);
+    }
+
+    setEditingId(null);
+    setEditUrl("");
+    setEditUrlValid(false);
+    setEditUrlValidationMsg("");
+    setEditLoading(false);
+  }
+
+  if (loadingBusinesses) {
+    return (
+      <main className="h-full flex items-center justify-center px-4 py-8">
+        <div className="text-slate-400">Loading...</div>
+      </main>
+    );
+  }
 
   return (
     <main className="h-full flex items-center justify-center px-4 py-8">
@@ -155,252 +269,377 @@ export default function SetupPage() {
             </div>
           </div>
 
-          {/* Step indicator — only for first-time setup */}
-          {!hasExisting && (
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs">✓</span>
-                Account
-              </div>
-              <div className="flex-1 h-px bg-slate-700" />
-              <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-medium">
-                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">2</span>
-                Your Business
-              </div>
-              <div className="flex-1 h-px bg-slate-700" />
-              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-xs">3</span>
-                Dashboard
-              </div>
-            </div>
-          )}
+          {/* Show existing locations or add new */}
+          {step === "list" ? (
+            <>
+              <h1 className="text-2xl font-bold text-white mb-1">
+                {businesses.length === 0 ? "Tell us about your business" : "Your Locations"}
+              </h1>
+              <p className="text-slate-400 text-sm mb-8">
+                {businesses.length === 0
+                  ? "This helps the AI write responses that match your business context and tone."
+                  : "Click on a location to edit its Google Maps URL, or add a new one."}
+              </p>
 
-          {/* Page title changes based on context */}
-          <h1 className="text-2xl font-bold text-white mb-1">
-            {step === "details"
-              ? (hasExisting ? "Add a New Location" : "Tell us about your business")
-              : "Review Your Details"
-            }
-          </h1>
-          <p className="text-slate-400 text-sm mb-8">
-            {step === "details"
-              ? (hasExisting
-                  ? "Each location gets its own review dashboard, stats, and AI responses."
-                  : "This helps the AI write responses that match your business context and tone."
-                )
-              : "Review your information. You can edit the URL if needed."}
-          </p>
-
-          {step === "details" ? (
-            <form onSubmit={handleNext} className="space-y-5">
-
-              {/* Business name */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-1.5">
-                  {hasExisting ? "Location name" : "Business name"} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={hasExisting ? "e.g. The Salon – Bandra Branch" : "e.g. The Grand Salon, Dr. Patel's Clinic"}
-                  className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200"
-                />
-              </div>
-
-              {/* Business type */}
-              <div>
-                <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Business type
-                </label>
-                <select
-                  id="type"
-                  value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-sm outline-none transition-all duration-200 text-white"
-                >
-                  <option value="">Select a type (optional)</option>
-                  {BUSINESS_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Google Maps URL */}
-              <div>
-                <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Google Maps Business URL <span className="text-slate-500">(optional)</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="url"
-                    type="url"
-                    value={googleMapsUrl}
-                    onChange={(e) => {
-                      setGoogleMapsUrl(e.target.value);
-                      setUrlValid(false);
-                      setUrlValidationMsg("");
-                    }}
-                    placeholder="https://www.google.com/maps/place/..."
-                    className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
-                      urlValid
-                        ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                        : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                    }`}
-                  />
-                  {googleMapsUrl.trim() && !urlValid && (
-                    <button
-                      type="button"
-                      onClick={validateGoogleMapsUrl}
-                      disabled={urlValidating}
-                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+              {/* Existing locations list */}
+              {businesses.length > 0 && (
+                <div className="space-y-3 mb-8">
+                  {businesses.map((business) => (
+                    <div
+                      key={business.id}
+                      onClick={() => {
+                        setEditingId(business.id);
+                        setEditUrl(business.google_maps_url || "");
+                        setEditUrlValid(!!business.google_maps_url);
+                      }}
+                      className="bg-slate-900/50 border border-slate-700 hover:border-indigo-500 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:bg-slate-900"
                     >
-                      {urlValidating ? "Verifying..." : "Verify"}
-                    </button>
-                  )}
-                </div>
-
-                {/* Validation message */}
-                {urlValidationMsg && (
-                  <p className={`text-xs mt-2 ${
-                    urlValid ? "text-emerald-400" : "text-red-400"
-                  }`}>
-                    {urlValidationMsg}
-                  </p>
-                )}
-
-                <p className="text-xs text-slate-500 mt-2">
-                  Paste the URL from your Google Maps business listing to fetch reviews automatically.
-                </p>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 text-red-300 text-sm">
-                  {error}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white">{business.name}</h3>
+                          {business.business_type && (
+                            <p className="text-xs text-slate-400 mt-1">{business.business_type}</p>
+                          )}
+                          {business.google_maps_url ? (
+                            <p className="text-xs text-emerald-400 mt-2">✓ Google Maps URL added</p>
+                          ) : (
+                            <p className="text-xs text-yellow-400 mt-2">⚠ No Google Maps URL</p>
+                          )}
+                        </div>
+                        <div className="text-indigo-400 text-lg">→</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Submit */}
+              {/* Add new location button */}
               <button
-                type="submit"
-                disabled={loading || !name.trim()}
-                className="btn-shimmer w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-600/30"
+                onClick={() => {
+                  setStep("add-details");
+                  setName("");
+                  setBusinessType("");
+                  setGoogleMapsUrl("");
+                  setUrlValid(false);
+                  setError("");
+                }}
+                className="btn-shimmer w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-600/30"
               >
-                Next →
+                {businesses.length === 0 ? "Add Your Business →" : "+ Add Another Location"}
               </button>
-            </form>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            </>
+          ) : step === "add-details" ? (
+            <>
+              <h1 className="text-2xl font-bold text-white mb-1">Add a New Location</h1>
+              <p className="text-slate-400 text-sm mb-8">
+                Each location gets its own review dashboard, stats, and AI responses.
+              </p>
 
-              {/* Business name - Display only */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  {hasExisting ? "Location name" : "Business name"}
-                </label>
-                <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
-                  {name}
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Cannot be changed</p>
-              </div>
-
-              {/* Business type - Display only */}
-              {businessType && (
+              <form onSubmit={handleAddNext} className="space-y-5">
+                {/* Business name */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Location name <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. The Salon – Bandra Branch"
+                    className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200"
+                  />
+                </div>
+
+                {/* Business type */}
+                <div>
+                  <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-1.5">
                     Business type
                   </label>
-                  <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
-                    {businessType}
+                  <select
+                    id="type"
+                    value={businessType}
+                    onChange={(e) => setBusinessType(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg px-4 py-2.5 text-sm outline-none transition-all duration-200 text-white"
+                  >
+                    <option value="">Select a type (optional)</option>
+                    {BUSINESS_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Google Maps URL */}
+                <div>
+                  <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Google Maps Business URL <span className="text-slate-500">(optional)</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="url"
+                      type="url"
+                      value={googleMapsUrl}
+                      onChange={(e) => {
+                        setGoogleMapsUrl(e.target.value);
+                        setUrlValid(false);
+                        setUrlValidationMsg("");
+                      }}
+                      placeholder="https://www.google.com/maps/place/..."
+                      className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
+                        urlValid
+                          ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                          : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                      }`}
+                    />
+                    {googleMapsUrl.trim() && !urlValid && (
+                      <button
+                        type="button"
+                        onClick={validateGoogleMapsUrl}
+                        disabled={urlValidating}
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                      >
+                        {urlValidating ? "Verifying..." : "Verify"}
+                      </button>
+                    )}
                   </div>
-                </div>
-              )}
 
-              {/* Google Maps URL - Editable */}
-              <div>
-                <label htmlFor="preview-url" className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Google Maps Business URL
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="preview-url"
-                    type="url"
-                    value={googleMapsUrl}
-                    onChange={(e) => {
-                      setGoogleMapsUrl(e.target.value);
-                      setUrlValid(false);
-                      setUrlValidationMsg("");
-                    }}
-                    placeholder="https://www.google.com/maps/place/..."
-                    className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
-                      urlValid
-                        ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                        : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                    }`}
-                  />
-                  {googleMapsUrl.trim() && !urlValid && (
-                    <button
-                      type="button"
-                      onClick={validateGoogleMapsUrl}
-                      disabled={urlValidating}
-                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
-                    >
-                      {urlValidating ? "Verifying..." : "Verify"}
-                    </button>
+                  {urlValidationMsg && (
+                    <p className={`text-xs mt-2 ${urlValid ? "text-emerald-400" : "text-red-400"}`}>
+                      {urlValidationMsg}
+                    </p>
                   )}
+
+                  <p className="text-xs text-slate-500 mt-2">
+                    Paste the URL from your Google Maps business listing to fetch reviews automatically.
+                  </p>
                 </div>
 
-                {/* Validation message */}
-                {urlValidationMsg && (
-                  <p className={`text-xs mt-2 ${
-                    urlValid ? "text-emerald-400" : "text-red-400"
-                  }`}>
-                    {urlValidationMsg}
-                  </p>
+                {/* Error */}
+                {error && (
+                  <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 text-red-300 text-sm">
+                    {error}
+                  </div>
                 )}
 
-                <p className="text-xs text-slate-500 mt-2">
-                  You can edit this URL if needed.
-                </p>
-              </div>
-
-              {/* Info Box */}
-              <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-lg px-4 py-3 text-indigo-300 text-sm">
-                <p className="font-medium mb-1">✓ Details Confirmed</p>
-                <p>Ready to set up your dashboard.</p>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 text-red-300 text-sm">
-                  {error}
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep("list")}
+                    disabled={loading}
+                    className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !name.trim()}
+                    className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-600/30"
+                  >
+                    Next →
+                  </button>
                 </div>
-              )}
+              </form>
+            </>
+          ) : step === "add-preview" ? (
+            <>
+              <h1 className="text-2xl font-bold text-white mb-1">Review Your Details</h1>
+              <p className="text-slate-400 text-sm mb-8">
+                Review your information. You can edit the URL if needed.
+              </p>
 
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep("details")}
-                  disabled={loading}
-                  className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-shimmer flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-600/30"
-                >
-                  {loading
-                    ? (hasExisting ? "Adding location…" : "Setting up your dashboard…")
-                    : (hasExisting ? "Add Location →" : "Continue to Dashboard →")
-                  }
-                </button>
+              <form onSubmit={handleAddSubmit} className="space-y-5">
+                {/* Location name - Display only */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Location name
+                  </label>
+                  <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
+                    {name}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Cannot be changed</p>
+                </div>
+
+                {/* Business type - Display only */}
+                {businessType && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                      Business type
+                    </label>
+                    <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
+                      {businessType}
+                    </div>
+                  </div>
+                )}
+
+                {/* Google Maps URL - Editable */}
+                <div>
+                  <label htmlFor="preview-url" className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Google Maps Business URL
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="preview-url"
+                      type="url"
+                      value={googleMapsUrl}
+                      onChange={(e) => {
+                        setGoogleMapsUrl(e.target.value);
+                        setUrlValid(false);
+                        setUrlValidationMsg("");
+                      }}
+                      placeholder="https://www.google.com/maps/place/..."
+                      className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
+                        urlValid
+                          ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                          : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                      }`}
+                    />
+                    {googleMapsUrl.trim() && !urlValid && (
+                      <button
+                        type="button"
+                        onClick={validateGoogleMapsUrl}
+                        disabled={urlValidating}
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                      >
+                        {urlValidating ? "Verifying..." : "Verify"}
+                      </button>
+                    )}
+                  </div>
+
+                  {urlValidationMsg && (
+                    <p className={`text-xs mt-2 ${urlValid ? "text-emerald-400" : "text-red-400"}`}>
+                      {urlValidationMsg}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-slate-500 mt-2">
+                    You can edit this URL if needed.
+                  </p>
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-lg px-4 py-3 text-indigo-300 text-sm">
+                  <p className="font-medium mb-1">✓ Details Confirmed</p>
+                  <p>Ready to set up your location dashboard.</p>
+                </div>
+
+                {/* Error */}
+                {error && (
+                  <div className="bg-red-950/50 border border-red-700/50 rounded-lg px-4 py-3 text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep("add-details")}
+                    disabled={loading}
+                    className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-shimmer flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-indigo-600/30"
+                  >
+                    {loading ? "Adding location…" : "Add Location →"}
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : null}
+
+          {/* Edit location modal */}
+          {editingId && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+                <h2 className="text-lg font-bold text-white mb-2">Edit Google Maps URL</h2>
+                <p className="text-slate-400 text-sm mb-6">
+                  Update the Google Maps URL for this location.
+                </p>
+
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  {/* Location name - Display only */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                      Location name
+                    </label>
+                    <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
+                      {businesses.find((b) => b.id === editingId)?.name}
+                    </div>
+                  </div>
+
+                  {/* Google Maps URL - Editable */}
+                  <div>
+                    <label htmlFor="edit-url" className="block text-sm font-medium text-slate-300 mb-1.5">
+                      Google Maps URL
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="edit-url"
+                        type="url"
+                        value={editUrl}
+                        onChange={(e) => {
+                          setEditUrl(e.target.value);
+                          setEditUrlValid(false);
+                          setEditUrlValidationMsg("");
+                        }}
+                        placeholder="https://www.google.com/maps/place/..."
+                        className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
+                          editUrlValid
+                            ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        }`}
+                      />
+                      {editUrl.trim() && !editUrlValid && (
+                        <button
+                          type="button"
+                          onClick={validateEditUrl}
+                          disabled={editUrlValidating}
+                          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                        >
+                          {editUrlValidating ? "Verifying..." : "Verify"}
+                        </button>
+                      )}
+                    </div>
+
+                    {editUrlValidationMsg && (
+                      <p className={`text-xs mt-2 ${editUrlValid ? "text-emerald-400" : "text-red-400"}`}>
+                        {editUrlValidationMsg}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(null);
+                        setEditUrl("");
+                        setEditUrlValid(false);
+                        setEditUrlValidationMsg("");
+                      }}
+                      disabled={editLoading}
+                      className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={editLoading || !editUrl.trim()}
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                    >
+                      {editLoading ? "Saving..." : "Save URL"}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           )}
         </div>
       </div>
