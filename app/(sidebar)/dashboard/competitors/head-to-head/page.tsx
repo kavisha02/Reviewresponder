@@ -19,6 +19,12 @@ export default function HeadToHeadPage() {
   const [tierLimit, setTierLimit] = useState(3);
   const [currentCount, setCurrentCount] = useState(0);
   const [view, setView] = useState<"list" | "comparison">("list");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editUrl, setEditUrl] = useState("");
+  const [editUrlValidating, setEditUrlValidating] = useState(false);
+  const [editUrlValid, setEditUrlValid] = useState(false);
+  const [editUrlValidationMsg, setEditUrlValidationMsg] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     if (businessId) {
@@ -65,7 +71,7 @@ export default function HeadToHeadPage() {
           businessId,
           competitorName,
           googleMapsUrl,
-          maxReviews: maxReviews || 50,
+          maxReviews: maxReviews,
         }),
       });
 
@@ -112,6 +118,72 @@ export default function HeadToHeadPage() {
     }
   }
 
+  // Validate edit URL
+  async function validateEditUrl() {
+    if (!editUrl.trim()) {
+      setEditUrlValidationMsg("Please enter a URL");
+      setEditUrlValid(false);
+      return;
+    }
+
+    setEditUrlValidating(true);
+    setEditUrlValidationMsg("");
+
+    try {
+      const res = await fetch("/api/validate-google-maps-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: editUrl }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEditUrlValidationMsg(data.error || "Invalid Google Maps URL");
+        setEditUrlValid(false);
+        setEditUrlValidating(false);
+        return;
+      }
+
+      setEditUrlValidationMsg(`✓ Location verified: ${data.businessName}`);
+      setEditUrlValid(true);
+      setEditUrlValidating(false);
+    } catch (err) {
+      setEditUrlValidationMsg("Failed to validate URL. Please try again.");
+      setEditUrlValid(false);
+      setEditUrlValidating(false);
+    }
+  }
+
+  // Handle edit competitor URL
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId) return;
+
+    setEditLoading(true);
+
+    const supabase = await import("@/lib/supabase/client").then(m => m.createClient());
+    const { error: updateError } = await supabase
+      .from("competitor_benchmarks")
+      .update({ google_maps_url: editUrl })
+      .eq("id", editingId);
+
+    if (updateError) {
+      alert("Failed to update URL: " + updateError.message);
+      setEditLoading(false);
+      return;
+    }
+
+    // Reload competitors
+    await fetchCompetitors();
+
+    setEditingId(null);
+    setEditUrl("");
+    setEditUrlValid(false);
+    setEditUrlValidationMsg("");
+    setEditLoading(false);
+  }
+
   if (!businessId) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -152,20 +224,40 @@ export default function HeadToHeadPage() {
                     {competitors.map((competitor) => (
                       <div
                         key={competitor.id}
-                        onClick={() => {
-                          setSelectedCompetitorId(competitor.id);
-                          setView("comparison");
-                        }}
-                        className="bg-slate-800/70 border border-slate-700 hover:border-indigo-500 rounded-xl p-6 cursor-pointer transition-all duration-200 hover:bg-slate-800"
+                        className="bg-slate-800/70 border border-slate-700 hover:border-indigo-500 rounded-xl p-6 transition-all duration-200 hover:bg-slate-800"
                       >
                         <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
+                          <div className="flex-1 cursor-pointer" onClick={() => {
+                            setSelectedCompetitorId(competitor.id);
+                            setView("comparison");
+                          }}>
                             <h3 className="text-lg font-semibold text-white">{competitor.competitor_name}</h3>
                             {competitor.competitor_location && (
                               <p className="text-sm text-slate-400 mt-1">{competitor.competitor_location}</p>
                             )}
                           </div>
-                          <div className="text-indigo-400 text-xl">→</div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingId(competitor.id);
+                                setEditUrl(competitor.google_maps_url || "");
+                                setEditUrlValid(!!competitor.google_maps_url);
+                              }}
+                              className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded text-xs font-medium transition-all duration-200"
+                              title="Edit URL"
+                            >
+                              ✎ Edit
+                            </button>
+                            <div
+                              onClick={() => {
+                                setSelectedCompetitorId(competitor.id);
+                                setView("comparison");
+                              }}
+                              className="text-indigo-400 text-xl cursor-pointer hover:text-indigo-300 transition-all duration-200"
+                            >
+                              →
+                            </div>
+                          </div>
                         </div>
 
                         {/* Metrics */}
@@ -254,6 +346,96 @@ export default function HeadToHeadPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Competitor URL Modal */}
+      {editingId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full">
+            <h2 className="text-lg font-bold text-white mb-2">Edit Google Maps URL</h2>
+            <p className="text-slate-400 text-sm mb-6">
+              Update the Google Maps URL for this competitor.
+            </p>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              {/* Competitor name - Display only */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Competitor name
+                </label>
+                <div className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 text-white text-sm">
+                  {competitors.find((c) => c.id === editingId)?.competitor_name}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Cannot be changed</p>
+              </div>
+
+              {/* Google Maps URL - Editable */}
+              <div>
+                <label htmlFor="edit-competitor-url" className="block text-sm font-medium text-slate-300 mb-1.5">
+                  Google Maps URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="edit-competitor-url"
+                    type="url"
+                    value={editUrl}
+                    onChange={(e) => {
+                      setEditUrl(e.target.value);
+                      setEditUrlValid(false);
+                      setEditUrlValidationMsg("");
+                    }}
+                    placeholder="https://www.google.com/maps/place/..."
+                    className={`flex-1 bg-slate-900 border rounded-lg px-4 py-2.5 text-white placeholder-slate-500 text-sm outline-none transition-all duration-200 ${
+                      editUrlValid
+                        ? "border-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                    }`}
+                  />
+                  {editUrl.trim() && !editUrlValid && (
+                    <button
+                      type="button"
+                      onClick={validateEditUrl}
+                      disabled={editUrlValidating}
+                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                    >
+                      {editUrlValidating ? "Verifying..." : "Verify"}
+                    </button>
+                  )}
+                </div>
+
+                {editUrlValidationMsg && (
+                  <p className={`text-xs mt-2 ${editUrlValid ? "text-emerald-400" : "text-red-400"}`}>
+                    {editUrlValidationMsg}
+                  </p>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditUrl("");
+                    setEditUrlValid(false);
+                    setEditUrlValidationMsg("");
+                  }}
+                  disabled={editLoading}
+                  className="flex-1 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading || !editUrl.trim()}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                >
+                  {editLoading ? "Saving..." : "Save URL"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Competitor Modal */}
       <CompetitorSelectModal
