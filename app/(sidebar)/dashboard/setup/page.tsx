@@ -197,14 +197,7 @@ export default function SetupPage() {
       setBusinesses(updatedBusinesses || []);
     }
 
-    // Reset form
-    setName("");
-    setBusinessType("");
-    setGoogleMapsUrl("");
-    setUrlValid(false);
-    setUrlValidationMsg("");
-    setStep("list");
-    setLoading(false);
+    router.push(`/dashboard?business=${data.businessId}`);
   }
 
   // Handle edit location
