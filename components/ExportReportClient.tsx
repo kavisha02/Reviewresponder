@@ -350,7 +350,7 @@ export default function ExportReportClient({ reportData }: Props) {
                   ))}
                 </div>
               ) : (
-                <p style={{ color: '#6b7280', fontStyle: 'italic', margin: '0' }}>No AI actionable insights available. Please run AI analysis from the Analytics page first.</p>
+                <p style={{ color: '#6b7280', fontStyle: 'italic', margin: '0' }}>No AI actionable insights available. Please run AI analysis from the Deep Analysis page first.</p>
               )}
             </div>
           )}
