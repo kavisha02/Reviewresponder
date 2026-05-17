@@ -10,14 +10,18 @@ export async function checkCompetitorLimit(
 ): Promise<{ allowed: boolean; reason?: string; currentCount: number; limit: number }> {
   const supabase = await createClient();
 
-  // Get user's subscription tier (default to free)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("subscription_tier")
-    .eq("id", userId)
+  // Get user's subscription tier
+  const { data: subData } = await supabase
+    .from("user_subscriptions")
+    .select("plan_id")
+    .eq("user_id", userId)
     .single();
 
-  const tier = profile?.subscription_tier || "free";
+  const planId = subData?.plan_id || "free";
+
+  let limit = 1; // Default/Starter
+  if (planId === "pro") limit = 3;
+  if (planId === "elite") limit = 999999; // Unlimited
 
   // Get current competitor count for this business
   const { count } = await supabase
@@ -28,5 +32,14 @@ export async function checkCompetitorLimit(
 
   const currentCount = count || 0;
 
-  return { allowed: true, currentCount, limit: 50 };
+  if (currentCount >= limit) {
+    return {
+      allowed: false,
+      reason: `You have reached the maximum number of competitors (${limit}) for your ${planId.toUpperCase()} plan. Please upgrade to add more.`,
+      currentCount,
+      limit,
+    };
+  }
+
+  return { allowed: true, currentCount, limit };
 }

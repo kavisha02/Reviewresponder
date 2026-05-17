@@ -65,6 +65,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const allReviews = reviews ?? [];
 
+  // Fetch plan
+  const { data: subData } = await supabase
+    .from("user_subscriptions")
+    .select("plan_id")
+    .eq("user_id", user.id)
+    .single();
+  
+  const planId = subData?.plan_id || "free";
+
   // ── Stats ─────────────────────────────────────────────────────────────
   const fetchedReviews = allReviews.length;
   const totalPlatformReviews = isAll 
@@ -173,6 +182,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           isAllLocations={isAll}
           businessId={isAll ? "" : selectedId}
           business={business}
+          planId={planId}
         />
       </div>
     </main>

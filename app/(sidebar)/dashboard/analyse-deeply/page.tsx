@@ -48,6 +48,13 @@ export default async function DeepAnalysisPage({ searchParams }: PageProps) {
     .eq("business_id", selectedId)
     .order("review_date", { ascending: false }) as { data: Review[] | null };
 
+  // Fetch plan
+  const { data: subData } = await supabase
+    .from("user_subscriptions")
+    .select("plan_id")
+    .eq("user_id", user.id)
+    .single();
+
   return (
     <main className="text-slate-100">
 
@@ -62,7 +69,7 @@ export default async function DeepAnalysisPage({ searchParams }: PageProps) {
         </div>
 
         {/* Client Component with all analysis */}
-        <DeepAnalysisClient businessId={selectedId} reviews={reviews || []} business={business} />
+        <DeepAnalysisClient businessId={selectedId} reviews={reviews || []} business={business} planId={subData?.plan_id || "free"} />
       </div>
     </main>
   );

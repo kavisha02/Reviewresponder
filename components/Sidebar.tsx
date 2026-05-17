@@ -5,12 +5,14 @@ import Link from "next/link";
 import { Business } from "@/lib/types";
 import LocationSwitcher from "@/components/LocationSwitcher";
 import SignOutButton from "@/components/SignOutButton";
+import { UserPlanInfo } from "@/app/(sidebar)/layout";
 
 interface SidebarProps {
   businesses: Business[];
+  planInfo: UserPlanInfo;
 }
 
-export default function Sidebar({ businesses }: SidebarProps) {
+export default function Sidebar({ businesses, planInfo }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   
@@ -113,6 +115,23 @@ export default function Sidebar({ businesses }: SidebarProps) {
 
       {/* Footer / User Area */}
       <div className="p-4 border-t border-slate-800">
+        <div className="mb-4 bg-slate-900 rounded-lg p-3 border border-slate-800">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs font-semibold text-slate-400">Credits Used</span>
+            <span className="text-xs text-slate-300">
+              {planInfo.usedCredits} / {planInfo.totalCredits}
+            </span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-1.5 mb-3">
+            <div 
+              className="bg-indigo-500 h-1.5 rounded-full transition-all" 
+              style={{ width: `${Math.min(100, (planInfo.usedCredits / Math.max(1, planInfo.totalCredits)) * 100)}%` }}
+            ></div>
+          </div>
+          <Link href="/pricing" className="block w-full text-center text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 rounded-md transition-colors">
+            Upgrade Plan
+          </Link>
+        </div>
         <SignOutButton />
       </div>
     </div>

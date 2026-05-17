@@ -23,6 +23,24 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check credits
+    const { data: creditsData } = await supabase
+      .from("user_credits")
+      .select("total_credits, used_credits")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!creditsData || (creditsData.total_credits - creditsData.used_credits) <= 0) {
+      return NextResponse.json(
+        { error: "Insufficient credits. Please upgrade your plan." },
+        { status: 402 } // Payment Required
+      );
+    }
+
+    const availableCredits = creditsData.total_credits - creditsData.used_credits;
+    // Cap reviewLimit by available credits
+    const reviewLimit = Math.min(maxReviews, 500, availableCredits);
+
     if (!APIFY_API_TOKEN) {
       return NextResponse.json(
         { error: "Apify API token not configured" },
@@ -49,7 +67,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const reviewLimit = Math.min(maxReviews, 500);
+    if (!business.google_maps_url) {
+      return NextResponse.json(
+        { error: "Google Maps URL not set for this business" },
+        { status: 400 }
+      );
+    }
 
     console.log(`Fetching ${reviewLimit} reviews from Apify for business: ${businessId}`);
 
@@ -179,6 +202,14 @@ export async function POST(request: Request) {
           console.error("Failed to send negative alert:", alertError);
         }
       }
+    }
+
+    // Deduct credits based on newly inserted reviews
+    if (inserted && inserted.length > 0) {
+      await supabase
+        .from("user_credits")
+        .update({ used_credits: creditsData.used_credits + inserted.length })
+        .eq("user_id", user.id);
     }
 
     return NextResponse.json({

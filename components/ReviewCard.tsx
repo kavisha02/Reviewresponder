@@ -69,7 +69,7 @@ function formatDate(dateStr: string | null): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default function ReviewCard({ review, onStatusChange }: { review: Review; onStatusChange?: (newStatus: string) => void }) {
+export default function ReviewCard({ review, planId = "free", onStatusChange }: { review: Review; planId?: string; onStatusChange?: (newStatus: string) => void }) {
   const isNegative = review.rating <= 2;
   const hasOwnerResponse = review.owner_response && review.owner_response.trim().length > 0;
   const hasPublishedResponse = review.published_response && review.published_response.trim().length > 0;
@@ -311,27 +311,39 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
 
             {/* Generate — shown when no draft and no owner response */}
             {status === "new" && !hasOwnerResponse && (
-              <button
-                onClick={() => setShowToneModal(true)}
-                disabled={generating}
-                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all duration-200 ${
-                  generating
-                    ? "opacity-50 cursor-not-allowed bg-slate-700 text-slate-400 border-slate-600"
-                    : isNegative
-                      ? "bg-red-900/30 hover:bg-red-900/50 text-red-300 border-red-700/50 hover:border-red-500/70"
-                      : "bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border-indigo-700/50 hover:border-indigo-500"
-                }`}
-              >
-                {generating ? (
-                  <span className="flex items-center gap-1.5">
-                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                    </svg>
-                    Generating…
-                  </span>
-                ) : "Generate AI Response"}
-              </button>
+              <>
+                {["pro", "elite"].includes(planId) ? (
+                  <button
+                    onClick={() => setShowToneModal(true)}
+                    disabled={generating}
+                    className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all duration-200 ${
+                      generating
+                        ? "opacity-50 cursor-not-allowed bg-slate-700 text-slate-400 border-slate-600"
+                        : isNegative
+                          ? "bg-red-900/30 hover:bg-red-900/50 text-red-300 border-red-700/50 hover:border-red-500/70"
+                          : "bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border-indigo-700/50 hover:border-indigo-500"
+                    }`}
+                  >
+                    {generating ? (
+                      <span className="flex items-center gap-1.5">
+                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                        Generating…
+                      </span>
+                    ) : "Generate AI Response"}
+                  </button>
+                ) : (
+                  <a
+                    href="/pricing"
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border bg-slate-800/80 hover:bg-slate-700/80 text-indigo-300 border-slate-700 hover:border-indigo-500/50 transition-all duration-200"
+                    title="AI Responses require Pro or Elite plan"
+                  >
+                    <span>🔒</span> Upgrade for AI Responses
+                  </a>
+                )}
+              </>
             )}
 
             {/* Regenerate — shown when draft exists */}

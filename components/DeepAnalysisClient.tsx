@@ -21,9 +21,10 @@ interface Props {
   businessId: string;
   reviews: Review[];
   business: Business;
+  planId: string;
 }
 
-export default function DeepAnalysisClient({ businessId, reviews, business }: Props) {
+export default function DeepAnalysisClient({ businessId, reviews, business, planId }: Props) {
   const [categoryAnalysis, setCategoryAnalysis] = useState<{
     topics: Topic[];
     insights: Insight[];
@@ -351,8 +352,18 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
         </h2>
 
         {!categoryAnalysis ? (
-          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-4">
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden">
+            {planId !== "elite" && (
+              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-6 text-center">
+                <span className="text-4xl mb-3">🔒</span>
+                <h4 className="text-xl font-bold text-white mb-2">Elite Feature</h4>
+                <p className="text-slate-400 mb-4 max-w-sm">Deep AI Category Analysis is only available on the Elite plan.</p>
+                <a href="/pricing" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">
+                  Upgrade to Elite
+                </a>
+              </div>
+            )}
+            <div className={`flex items-start justify-between gap-4 ${planId !== "elite" ? 'opacity-20 pointer-events-none' : ''}`}>
               <div className="flex-1">
                 <h4 className="text-white font-semibold mb-2">🤖 Deep AI Category Analysis</h4>
                 <p className="text-slate-400 text-sm">
@@ -416,8 +427,18 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
         </h2>
 
         {!sentimentAnalysis ? (
-          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-4">
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden">
+             {planId !== "elite" && (
+              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-6 text-center">
+                <span className="text-4xl mb-3">🔒</span>
+                <h4 className="text-xl font-bold text-white mb-2">Elite Feature</h4>
+                <p className="text-slate-400 mb-4 max-w-sm">Detailed Sentiment Analysis is only available on the Elite plan.</p>
+                <a href="/pricing" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">
+                  Upgrade to Elite
+                </a>
+              </div>
+            )}
+            <div className={`flex items-start justify-between gap-4 ${planId !== "elite" ? 'opacity-20 pointer-events-none' : ''}`}>
               <div className="flex-1">
                 <h4 className="text-white font-semibold mb-2">💭 Sentiment Analysis</h4>
                 <p className="text-slate-400 text-sm">
@@ -551,8 +572,18 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
         </h2>
 
         {!actionableInsights ? (
-          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
-            <div className="flex items-start justify-between gap-4">
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden">
+            {planId !== "elite" && (
+              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-6 text-center">
+                <span className="text-4xl mb-3">🔒</span>
+                <h4 className="text-xl font-bold text-white mb-2">Elite Feature</h4>
+                <p className="text-slate-400 mb-4 max-w-sm">Actionable Insights generation is only available on the Elite plan.</p>
+                <a href="/pricing" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">
+                  Upgrade to Elite
+                </a>
+              </div>
+            )}
+            <div className={`flex items-start justify-between gap-4 ${planId !== "elite" ? 'opacity-20 pointer-events-none' : ''}`}>
               <div className="flex-1">
                 <h4 className="text-white font-semibold mb-2">🎯 AI-Powered Problem Solving</h4>
                 <p className="text-slate-400 text-sm">

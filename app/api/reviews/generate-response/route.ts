@@ -96,6 +96,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "reviewId is required" }, { status: 400 });
     }
 
+    // Check if user is on Pro or Elite plan
+    const { data: subData } = await supabase
+      .from("user_subscriptions")
+      .select("plan_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!subData || !["pro", "elite"].includes(subData.plan_id)) {
+      return NextResponse.json(
+        { error: "AI Responses require the Pro or Elite plan. Please upgrade." },
+        { status: 403 }
+      );
+    }
+
     // Validate tone, default to professional
     const validTones = ["professional", "friendly", "casual"];
     const selectedTone = validTones.includes(tone) ? tone : "professional";

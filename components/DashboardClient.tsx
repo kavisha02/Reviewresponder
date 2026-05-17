@@ -22,6 +22,7 @@ interface Props {
   isAllLocations?: boolean;
   businessId?: string;
   business?: Business | null;
+  planId?: string;
 }
 
 export default function DashboardClient({
@@ -29,6 +30,7 @@ export default function DashboardClient({
   isAllLocations = false,
   businessId = "",
   business = null,
+  planId = "free",
 }: Props) {
   const [sortedReviews, setSortedReviews] = useState(allReviews);
   const [reviews, setReviews] = useState(allReviews);
@@ -100,6 +102,7 @@ export default function DashboardClient({
             <ReviewCard
               key={review.id}
               review={review}
+              planId={planId}
               onStatusChange={(newStatus) => handleStatusChange(review.id, newStatus)}
             />
           ))}

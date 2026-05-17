@@ -45,6 +45,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if user is on Elite plan
+    const { data: subData } = await supabase
+      .from("user_subscriptions")
+      .select("plan_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (subData?.plan_id !== "elite") {
+      return NextResponse.json(
+        { error: "Deep Analysis requires the Elite plan. Please upgrade." },
+        { status: 403 }
+      );
+    }
+
     // Verify ownership
     const { data: business } = await supabase
       .from("businesses")
