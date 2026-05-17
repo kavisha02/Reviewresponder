@@ -67,7 +67,7 @@ export async function POST(
       .map((r, i) => `Review ${i + 1} (${r.rating} stars): ${r.review_text || "No text"}`)
       .join("\n\n");
 
-    const prompt = `Analyze the following reviews and extract the top 5-8 topics/themes mentioned.
+    const prompt = `Analyze the following reviews and extract the top 5 topics/themes mentioned.
 For each topic, count how many reviews mention it and calculate a sentiment score (-1 to 1, where -1 is negative, 0 is neutral, 1 is positive).
 
 Reviews:
@@ -95,7 +95,7 @@ Return ONLY a JSON array of topics:
       return NextResponse.json({ error: "Failed to parse topics response" }, { status: 500 });
     }
 
-    const topicsArray = Array.isArray(topics) ? topics : [];
+    const topicsArray = (Array.isArray(topics) ? topics : []).slice(0, 5);
 
     // Persist to DB so it survives navigation
     if (topicsArray.length > 0) {
