@@ -26,7 +26,7 @@ export default function CompetitorSelectModal({
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canAddMore = currentCount < tierLimit;
+  const canAddMore = true;
 
   async function handleNext(e: React.FormEvent) {
     e.preventDefault();
@@ -39,11 +39,6 @@ export default function CompetitorSelectModal({
 
     if (!googleMapsUrl.trim()) {
       setError("Google Maps URL is required to fetch reviews");
-      return;
-    }
-
-    if (!canAddMore) {
-      setError(`You've reached the limit of ${tierLimit} competitors for your tier`);
       return;
     }
 
@@ -99,12 +94,6 @@ export default function CompetitorSelectModal({
             ? "Review the competitor details. You can edit the URL if needed."
             : "How many reviews should we fetch for comparison?"}
         </p>
-
-        {!canAddMore && (
-          <div className="bg-yellow-950/50 border border-yellow-700/50 rounded-lg px-4 py-3 mb-4 text-yellow-300 text-sm">
-            You've reached the limit of {tierLimit} competitors for your tier. Upgrade to Pro for unlimited competitors.
-          </div>
-        )}
 
         {step === "details" ? (
           <form onSubmit={handleNext} className="space-y-4">

@@ -28,25 +28,5 @@ export async function checkCompetitorLimit(
 
   const currentCount = count || 0;
 
-  // Check limits based on tier
-  if (tier === "free" && currentCount >= 3) {
-    return {
-      allowed: false,
-      reason: "Free tier limited to 3 competitors. Upgrade to Pro for unlimited.",
-      currentCount,
-      limit: 3,
-    };
-  }
-
-  if (tier === "pro" && currentCount >= 50) {
-    return {
-      allowed: false,
-      reason: "Maximum 50 competitors per business.",
-      currentCount,
-      limit: 50,
-    };
-  }
-
-  const limit = tier === "free" ? 3 : 50;
-  return { allowed: true, currentCount, limit };
+  return { allowed: true, currentCount, limit: 50 };
 }

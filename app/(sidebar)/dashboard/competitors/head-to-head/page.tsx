@@ -320,12 +320,6 @@ export default function HeadToHeadPage() {
               {competitors.length === 0 ? "Add Your First Competitor" : "+ Add Another Competitor"}
             </button>
 
-            {/* Tier Limit Warning */}
-            {currentCount >= tierLimit && (
-              <div className="bg-yellow-950/50 border border-yellow-700/50 rounded-lg px-4 py-3 mt-6 text-yellow-300 text-sm">
-                You've reached the limit of {tierLimit} competitors for your tier. Upgrade to Pro for unlimited competitors.
-              </div>
-            )}
           </>
         ) : (
           <>
