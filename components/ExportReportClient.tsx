@@ -308,42 +308,50 @@ export default function ExportReportClient({ reportData }: Props) {
             </div>
           )}
 
-          {selectedSections.has("category") && (reportData.analyses.category as any) && (
+          {selectedSections.has("category") && (
             <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Category Analysis</h2>
-              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Topic</th>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Sentiment</th>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Mentions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(reportData.analyses.category as any).topics?.slice(0, 10).map((t: any, i: number) => (
-                    <tr key={t.topic} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
-                      <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>{t.topic}</td>
-                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{t.sentiment}</td>
-                      <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{t.mentions}</td>
+              {(reportData.analyses.category as any)?.topics?.length > 0 ? (
+                <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', pageBreakInside: 'avoid' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
+                      <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Topic</th>
+                      <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Sentiment</th>
+                      <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db' }}>Mentions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {(reportData.analyses.category as any).topics.slice(0, 10).map((t: any, i: number) => (
+                      <tr key={t.topic} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
+                        <td style={{ padding: '8px', fontWeight: '500', border: '1px solid #d1d5db' }}>{t.topic}</td>
+                        <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{t.sentiment}</td>
+                        <td style={{ padding: '8px', border: '1px solid #d1d5db' }}>{t.mentions}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ color: '#6b7280', fontStyle: 'italic', margin: '0' }}>No AI category analysis available. Please run AI analysis from the Analytics page first.</p>
+              )}
             </div>
           )}
 
-          {selectedSections.has("insights") && (reportData.analyses.insights as any) && (
+          {selectedSections.has("insights") && (
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>AI Actionable Insights</h2>
-              <div>
-                {(reportData.analyses.insights as any).slice(0, 5).map((insight: any, i: number) => (
-                  <div key={i} style={{ padding: '16px', border: '1px solid #e0e7ff', borderRadius: '8px', backgroundColor: '#eef2ff', marginBottom: '16px', pageBreakInside: 'avoid' }}>
-                    <h3 style={{ fontWeight: '600', color: '#312e81', margin: '0 0 8px 0' }}>{i + 1}. {insight.insight}</h3>
-                    <p style={{ color: '#4b5563', margin: '0 0 8px 0' }}><strong style={{ color: '#1f2937' }}>Impact:</strong> {insight.impact}</p>
-                    <p style={{ color: '#4b5563', margin: '0' }}><strong style={{ color: '#1f2937' }}>Action:</strong> {insight.recommendation}</p>
-                  </div>
-                ))}
-              </div>
+              {Array.isArray(reportData.analyses.insights) && (reportData.analyses.insights as any[]).length > 0 ? (
+                <div>
+                  {(reportData.analyses.insights as any[]).slice(0, 5).map((insight: any, i: number) => (
+                    <div key={i} style={{ padding: '16px', border: '1px solid #e0e7ff', borderRadius: '8px', backgroundColor: '#eef2ff', marginBottom: '16px', pageBreakInside: 'avoid' }}>
+                      <h3 style={{ fontWeight: '600', color: '#312e81', margin: '0 0 8px 0' }}>{i + 1}. {insight.insight}</h3>
+                      <p style={{ color: '#4b5563', margin: '0 0 8px 0' }}><strong style={{ color: '#1f2937' }}>Impact:</strong> {insight.impact}</p>
+                      <p style={{ color: '#4b5563', margin: '0' }}><strong style={{ color: '#1f2937' }}>Action:</strong> {insight.recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: '#6b7280', fontStyle: 'italic', margin: '0' }}>No AI actionable insights available. Please run AI analysis from the Analytics page first.</p>
+              )}
             </div>
           )}
 
