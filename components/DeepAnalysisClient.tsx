@@ -302,15 +302,15 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
             <div className="space-y-4">
               <div>
                 <p className="text-slate-400 text-xs mb-1">Total Rating</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-yellow-400">{totalPlatformRating}★</p>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1">Fetched: {avgRating}★</p>
+                <p className="text-2xl font-bold text-yellow-400">{totalPlatformRating}★</p>
+                <p className="text-slate-400 text-xs mb-1 mt-2">Fetched Rating</p>
+                <p className="text-2xl font-bold text-yellow-400/70">{avgRating}★</p>
               </div>
               <div>
                 <p className="text-slate-400 text-xs mb-1">Total Reviews</p>
                 <p className="text-2xl font-bold text-white">{totalPlatformReviews}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Fetched: {reviews.length}</p>
+                <p className="text-slate-400 text-xs mb-1 mt-2">Fetched Reviews</p>
+                <p className="text-2xl font-bold text-white/70">{reviews.length}</p>
               </div>
               <div>
                 <p className="text-slate-400 text-xs mb-1">Response Rate</p>
