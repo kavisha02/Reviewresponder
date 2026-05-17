@@ -13,7 +13,9 @@ interface CompetitorEntry {
   name: string;
   location: string | null;
   avgRating: number;
+  fetchedAvgRating?: number;
   totalReviews: number;
+  totalPlatformReviews?: number;
   responseRate: number;
   positive: number;
   mixed: number;
@@ -27,7 +29,10 @@ interface CompetitorEntry {
 interface YourBusiness {
   name: string;
   avgRating: number;
+  fetchedAvgRating?: number;
   totalReviews: number;
+  totalPlatformReviews?: number;
+  totalPlatformRating?: number;
   responseRate: number;
   positive: number;
   mixed: number;
@@ -169,7 +174,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
 
   // Best value per metric row (for highlighting)
   const bestRating = Math.max(yourBusiness.avgRating, ...competitors.map((c) => c.avgRating));
-  const bestReviews = Math.max(yourBusiness.totalReviews, ...competitors.map((c) => c.totalReviews));
+  const bestReviews = Math.max(yourBusiness.totalPlatformReviews || yourBusiness.totalReviews, ...competitors.map((c) => c.totalPlatformReviews || c.totalReviews));
   const bestResponse = Math.max(yourBusiness.responseRate, ...competitors.map((c) => c.responseRate));
 
   // All snapshots merged for trends table
@@ -208,7 +213,8 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                     <tr className="border-b border-slate-600 bg-slate-700/60 text-slate-300 text-xs uppercase">
                       <th className="px-4 py-3 text-left">Rank</th>
                       <th className="px-4 py-3 text-left">Name</th>
-                      <th className="px-4 py-3 text-right">Rating</th>
+                      <th className="px-4 py-3 text-right">Total Rating</th>
+                      <th className="px-4 py-3 text-right">Fetched Rating</th>
                       <th className="px-4 py-3 text-right">Reviews</th>
                       <th className="px-4 py-3 text-right">Response Rate</th>
                       <th className="px-4 py-3 text-right">Positive %</th>
@@ -234,11 +240,14 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                               {p.isYou && <span className="text-xs bg-indigo-600 text-white px-1.5 py-0.5 rounded">You</span>}
                             </div>
                           </td>
-                          <td className={`px-4 py-3 text-right font-semibold ${p.avgRating === bestRating ? "text-emerald-400" : "text-slate-300"}`}>
+                          <td className={`px-4 py-3 text-right ${p.avgRating === bestRating ? "text-emerald-400" : "text-slate-300"}`}>
                             {p.avgRating > 0 ? `${p.avgRating.toFixed(1)} ★` : "N/A"}
                           </td>
-                          <td className={`px-4 py-3 text-right ${p.totalReviews === bestReviews ? "text-emerald-400 font-semibold" : "text-slate-300"}`}>
-                            {p.totalReviews}
+                          <td className="px-4 py-3 text-right text-slate-300">
+                            {p.fetchedAvgRating ? `${p.fetchedAvgRating.toFixed(1)} ★` : "N/A"}
+                          </td>
+                          <td className={`px-4 py-3 text-right ${(p.totalPlatformReviews || p.totalReviews) === bestReviews ? "text-emerald-400 font-semibold" : "text-slate-300"}`}>
+                            {p.totalPlatformReviews || p.totalReviews}
                           </td>
                           <td className={`px-4 py-3 text-right ${p.responseRate === bestResponse ? "text-emerald-400 font-semibold" : "text-slate-300"}`}>
                             {p.responseRate}%
@@ -277,14 +286,20 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                   <tbody>
                     {[
                       {
-                        label: "Avg Rating",
+                        label: "Total Rating",
                         values: [yourBusiness.avgRating, ...competitors.slice(0, 4).map((c) => c.avgRating)],
                         format: (v: number) => v > 0 ? `${v.toFixed(1)} ★` : "N/A",
                         bestFn: (vals: number[]) => Math.max(...vals),
                       },
                       {
+                        label: "Fetched Rating",
+                        values: [yourBusiness.fetchedAvgRating || 0, ...competitors.slice(0, 4).map((c) => c.fetchedAvgRating || 0)],
+                        format: (v: number) => v > 0 ? `${v.toFixed(1)} ★` : "N/A",
+                        bestFn: (vals: number[]) => Math.max(...vals),
+                      },
+                      {
                         label: "Total Reviews",
-                        values: [yourBusiness.totalReviews, ...competitors.slice(0, 4).map((c) => c.totalReviews)],
+                        values: [yourBusiness.totalPlatformReviews || yourBusiness.totalReviews, ...competitors.slice(0, 4).map((c) => c.totalPlatformReviews || c.totalReviews)],
                         format: (v: number) => String(v),
                         bestFn: (vals: number[]) => Math.max(...vals),
                       },
@@ -409,10 +424,19 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                       </div>
                       <span className="text-xs text-slate-500 whitespace-nowrap">{timeAgo(c.lastSynced)}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-400 mb-3">
-                      <span>{c.totalReviews} reviews</span>
-                      <span>·</span>
-                      <span>{c.avgRating > 0 ? `${c.avgRating.toFixed(1)} ★` : "No rating"}</span>
+                    <div className="flex flex-col gap-1 mb-3">
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <span className="font-semibold text-slate-300">Total:</span>
+                        <span>{c.totalPlatformReviews || c.totalReviews} reviews</span>
+                        <span>·</span>
+                        <span className="text-yellow-400">{c.avgRating > 0 ? `${c.avgRating.toFixed(1)} ★` : "No rating"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span className="font-medium">Fetched:</span>
+                        <span>{c.totalReviews} reviews</span>
+                        <span>·</span>
+                        <span className="text-yellow-500/70">{c.fetchedAvgRating ? `${c.fetchedAvgRating.toFixed(1)} ★` : "No rating"}</span>
+                      </div>
                     </div>
                     <button
                       onClick={() => setSyncModal({ competitorId: c.id, competitorName: c.name, count: 1 })}

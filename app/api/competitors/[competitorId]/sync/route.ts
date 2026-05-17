@@ -124,7 +124,7 @@ export async function POST(
         const batchInput = chunk.map(r => ({
           id: r.external_id || "",
           text: r.review_text || "",
-          rating: r.rating
+          rating: r.rating !== null ? r.rating : undefined
         }));
 
         try {
@@ -238,17 +238,30 @@ export async function POST(
     );
 
     // Update competitor benchmark
+    const totalPlatformReviews = apifyReviews?.[0]?.reviewsCount || allReviewsArray.length;
+    const totalPlatformRating = apifyReviews?.[0]?.totalScore;
+    
+    const updateData: any = {
+      total_reviews: allReviewsArray.length,
+      positive_count: sentimentCounts.positive,
+      mixed_count: sentimentCounts.mixed,
+      negative_count: sentimentCounts.negative,
+      response_rate: responseRate,
+      last_synced_at: new Date().toISOString(),
+      total_platform_reviews: totalPlatformReviews,
+      avg_rating: allReviewsArray.length > 0 
+        ? parseFloat((allReviewsArray.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / allReviewsArray.length).toFixed(2))
+        : null
+    };
+    
+    if (totalPlatformRating !== undefined) {
+      updateData.total_platform_rating = totalPlatformRating;
+    }
+    
     finalOperations.push(
       supabase
         .from("competitor_benchmarks")
-        .update({
-          total_reviews: allReviewsArray.length,
-          positive_count: sentimentCounts.positive,
-          mixed_count: sentimentCounts.mixed,
-          negative_count: sentimentCounts.negative,
-          response_rate: responseRate,
-          last_synced_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", competitorId)
     );
 

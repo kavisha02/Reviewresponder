@@ -86,6 +86,8 @@ export async function POST(request: Request) {
     }
 
     // Create competitor benchmark record
+    const totalPlatformReviews = apifyReviews[0]?.reviewsCount || apifyReviews.length;
+    
     const { data: competitor, error: createError } = await supabase
       .from("competitor_benchmarks")
       .insert({
@@ -94,6 +96,8 @@ export async function POST(request: Request) {
         competitor_name: competitorName,
         google_maps_url: googleMapsUrl,
         last_synced_at: new Date().toISOString(),
+        total_platform_reviews: totalPlatformReviews,
+        total_platform_rating: apifyReviews[0]?.totalScore || null,
       })
       .select()
       .single();

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       { data: userReviews },
       { data: competitors },
     ] = await Promise.all([
-      supabase.from("businesses").select("name").eq("id", businessId).eq("user_id", user.id).single(),
+      supabase.from("businesses").select("name, total_platform_reviews, total_platform_rating").eq("id", businessId).eq("user_id", user.id).single(),
       supabase.from("reviews").select("rating, status").eq("business_id", businessId),
       supabase.from("competitor_benchmarks").select("*").eq("business_id", businessId).eq("user_id", user.id),
     ]);
@@ -31,9 +31,10 @@ export async function POST(request: Request) {
     if (!GEMINI_API_KEY) return NextResponse.json({ error: "Gemini API key not configured" }, { status: 500 });
 
     const userReviewsArr = userReviews || [];
-    const userAvgRating = userReviewsArr.length > 0
+    const userAvgRating = business.total_platform_rating || (userReviewsArr.length > 0
       ? (userReviewsArr.reduce((s, r) => s + r.rating, 0) / userReviewsArr.length).toFixed(1)
-      : "0";
+      : "0");
+    const userTotalReviews = business.total_platform_reviews || userReviewsArr.length;
     const userResponseRate = userReviewsArr.length > 0
       ? Math.round((userReviewsArr.filter((r) => r.status === "responded").length / userReviewsArr.length) * 100)
       : 0;
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     const competitorLines = competitorsArr.map((c, i) =>
       `Competitor ${i + 1} (${c.competitor_name}):
   - Rating: ${c.avg_rating ?? 0}/5.0
-  - Total Reviews: ${c.total_reviews ?? 0}
+  - Total Reviews: ${c.total_platform_reviews || c.total_reviews || 0}
   - Response Rate: ${Math.round(c.response_rate ?? 0)}%
   - Positive: ${c.positive_count ?? 0}, Mixed: ${c.mixed_count ?? 0}, Negative: ${c.negative_count ?? 0}`
     ).join("\n\n");
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
 
 My Business (${business.name}):
 - Rating: ${userAvgRating}/5.0
-- Total Reviews: ${userReviewsArr.length}
+- Total Reviews: ${userTotalReviews}
 - Response Rate: ${userResponseRate}%
 - Positive Reviews: ${userReviewsArr.filter((r) => r.rating >= 4).length}
 - Negative Reviews: ${userReviewsArr.filter((r) => r.rating <= 2).length}

@@ -73,10 +73,12 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
 
   // Calculate statistics
   const totalReviews = reviews.length;
+  const totalPlatformReviews = business.total_platform_reviews || reviews.length;
   const avgRatingNum = reviews.length > 0
     ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
     : 0;
   const avgRating = avgRatingNum.toFixed(1);
+  const totalPlatformRating = business.total_platform_rating ? business.total_platform_rating.toFixed(1) : avgRating;
 
   const positiveReviews = reviews.filter(r => r.rating >= 4);
   const negativeReviews = reviews.filter(r => r.rating <= 2);
@@ -297,19 +299,23 @@ export default function DeepAnalysisClient({ businessId, reviews, business }: Pr
           {/* Stats Card */}
           <div className="bg-gradient-to-br from-indigo-950/40 to-indigo-900/20 border border-indigo-800/40 rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-indigo-300 mb-4 uppercase tracking-wide">Quick Stats</h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <p className="text-slate-400 text-xs">Total Reviews</p>
-                <p className="text-2xl font-bold text-white">{totalReviews}</p>
+                <p className="text-slate-400 text-xs mb-1">Total Rating</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-bold text-yellow-400">{totalPlatformRating}★</p>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">Fetched: {avgRating}★</p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs">Average Rating</p>
-                <p className="text-2xl font-bold text-yellow-400">{avgRating}★</p>
+                <p className="text-slate-400 text-xs mb-1">Total Reviews</p>
+                <p className="text-2xl font-bold text-white">{totalPlatformReviews}</p>
+                <p className="text-[11px] text-slate-500 mt-1">Fetched: {reviews.length}</p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs">Response Rate</p>
+                <p className="text-slate-400 text-xs mb-1">Response Rate</p>
                 <p className="text-2xl font-bold text-emerald-400">
-                  {totalReviews > 0 ? Math.round((reviews.filter(r => r.status === "responded").length / totalReviews) * 100) : 0}%
+                  {reviews.length > 0 ? Math.round((reviews.filter(r => r.status === "responded").length / reviews.length) * 100) : 0}%
                 </p>
               </div>
             </div>

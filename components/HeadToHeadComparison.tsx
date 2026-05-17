@@ -6,7 +6,10 @@ interface HeadToHeadData {
   yourBusiness: {
     name: string;
     avgRating: number;
+    fetchedAvgRating?: number;
     totalReviews: number;
+    totalPlatformReviews: number;
+    totalPlatformRating?: number;
     responseRate: number;
     sentimentBreakdown: { positive: number; mixed: number; negative: number };
     topTopics: string[];
@@ -22,7 +25,10 @@ interface HeadToHeadData {
     name: string;
     location: string | null;
     avgRating: number | null;
+    fetchedAvgRating?: number | null;
     totalReviews: number | null;
+    totalPlatformReviews: number | null;
+    totalPlatformRating?: number | null;
     responseRate: number | null;
     sentimentBreakdown: { positive: number; mixed: number; negative: number };
     topTopics: Array<{ topic: string; mentions: number; sentiment: number | null }>;
@@ -327,19 +333,27 @@ export default function HeadToHeadComparison({
           <div className="space-y-4">
             {/* Rating */}
             <div>
-              <p className="text-slate-400 text-sm mb-1">Average Rating</p>
-              <div className="flex items-center gap-2">
+              <p className="text-slate-400 text-sm mb-1">Total Rating</p>
+              <div className="flex items-center gap-2 mb-1">
                 <StarRating rating={data.yourBusiness.avgRating} size="lg" />
                 <span className="text-2xl font-bold text-white">
                   {data.yourBusiness.avgRating.toFixed(1)}
                 </span>
               </div>
+              <p className="text-xs text-slate-500">
+                Fetched: {data.yourBusiness.fetchedAvgRating ? `${data.yourBusiness.fetchedAvgRating.toFixed(1)} ★` : "N/A"}
+              </p>
             </div>
 
             {/* Reviews */}
             <div>
               <p className="text-slate-400 text-sm mb-1">Total Reviews</p>
-              <p className="text-2xl font-bold text-white">{data.yourBusiness.totalReviews}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-white">{data.yourBusiness.totalPlatformReviews || data.yourBusiness.totalReviews}</p>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {data.yourBusiness.totalReviews} fetched & analyzed
+              </p>
             </div>
 
             {/* Response Rate */}
@@ -364,19 +378,27 @@ export default function HeadToHeadComparison({
           <div className="space-y-4">
             {/* Rating */}
             <div>
-              <p className="text-slate-400 text-sm mb-1">Average Rating</p>
-              <div className="flex items-center gap-2">
+              <p className="text-slate-400 text-sm mb-1">Total Rating</p>
+              <div className="flex items-center gap-2 mb-1">
                 <StarRating rating={data.competitor.avgRating || 0} size="lg" />
                 <span className="text-2xl font-bold text-white">
                   {data.competitor.avgRating?.toFixed(1) || "N/A"}
                 </span>
               </div>
+              <p className="text-xs text-slate-500">
+                Fetched: {data.competitor.fetchedAvgRating ? `${data.competitor.fetchedAvgRating.toFixed(1)} ★` : "N/A"}
+              </p>
             </div>
 
             {/* Reviews */}
             <div>
               <p className="text-slate-400 text-sm mb-1">Total Reviews</p>
-              <p className="text-2xl font-bold text-white">{data.competitor.totalReviews || 0}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-white">{data.competitor.totalPlatformReviews || data.competitor.totalReviews || 0}</p>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {data.competitor.totalReviews || 0} fetched & analyzed
+              </p>
             </div>
 
             {/* Response Rate */}

@@ -128,8 +128,11 @@ export async function GET(
     return NextResponse.json({
       yourBusiness: {
         name: business.name,
-        avgRating: parseFloat(userAvgRating as string),
+        avgRating: business.total_platform_rating || parseFloat(userAvgRating as string),
+        fetchedAvgRating: parseFloat(userAvgRating as string),
         totalReviews: userReviewsArray.length,
+        totalPlatformReviews: business.total_platform_reviews || userReviewsArray.length,
+        totalPlatformRating: business.total_platform_rating || parseFloat(userAvgRating as string),
         responseRate: userResponseRate,
         sentimentBreakdown: userSentimentCounts,
         topTopics: userTopTopics,
@@ -144,8 +147,11 @@ export async function GET(
       competitor: {
         name: competitor.competitor_name,
         location: competitor.competitor_location,
-        avgRating: competitor.avg_rating,
+        avgRating: competitor.total_platform_rating || competitor.avg_rating,
+        fetchedAvgRating: competitor.avg_rating,
         totalReviews: competitor.total_reviews,
+        totalPlatformReviews: competitor.total_platform_reviews || competitor.total_reviews,
+        totalPlatformRating: competitor.total_platform_rating || competitor.avg_rating,
         responseRate: competitorResponseRate,
         sentimentBreakdown: {
           positive: competitor.positive_count,

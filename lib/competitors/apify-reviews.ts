@@ -10,6 +10,8 @@ const APIFY_ACTOR_ID = "Xb8osYTtOjlsgI6k9";
 export interface ApifyReview {
   reviewId?: string;
   id?: string;
+  reviewsCount?: number;
+  totalScore?: number;
   publishedAtDate?: string;
   publishedAt?: string;
   publishAt?: string;

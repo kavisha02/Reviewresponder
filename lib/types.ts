@@ -14,6 +14,8 @@ export interface Business {
   tone: string;
   language: string;
   auto_publish_positive: boolean;
+  total_platform_reviews?: number;
+  total_platform_rating?: number;
   created_at: string;
 }
 
@@ -55,6 +57,8 @@ export interface CompetitorBenchmark {
   english_count: number;
   hindi_count: number;
   hinglish_count: number;
+  total_platform_reviews?: number;
+  total_platform_rating?: number;
   last_synced_at: string | null;
   created_at: string;
   updated_at: string;

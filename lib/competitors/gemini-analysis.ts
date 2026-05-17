@@ -43,7 +43,8 @@ export async function extractTopicsFromReviews(
         return `"${r.review_text}"`;
       }
       // For rating-only reviews, create a synthetic description
-      const ratingDesc = r.rating >= 4 ? "positive" : r.rating === 3 ? "neutral" : "negative";
+      const rating = r.rating || 5;
+      const ratingDesc = rating >= 4 ? "positive" : rating === 3 ? "neutral" : "negative";
       return `"${ratingDesc} rating"`;
     })
     .join("\n");

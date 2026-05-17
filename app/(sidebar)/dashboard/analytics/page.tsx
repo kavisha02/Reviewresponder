@@ -102,11 +102,39 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   const all   = reviews ?? [];
   const total = all.length;
+  
+  const totalPlatformReviews = isAll 
+    ? businesses.reduce((sum, b) => sum + (b.total_platform_reviews || 0), 0) || total
+    : business?.total_platform_reviews || total;
 
   // ── 1. Key metrics ──────────────────────────────────────────────────────
   const avgRating = total > 0
     ? (all.reduce((s, r) => s + r.rating, 0) / total).toFixed(1)
     : "—";
+
+  let totalPlatformRating: string | number = "—";
+  if (isAll) {
+    let sumScore = 0;
+    let sumWeight = 0;
+    for (const b of businesses) {
+      if (b.total_platform_rating && b.total_platform_reviews) {
+        sumScore += Number(b.total_platform_rating) * Number(b.total_platform_reviews);
+        sumWeight += Number(b.total_platform_reviews);
+      } else if (b.total_platform_rating) {
+        sumScore += Number(b.total_platform_rating);
+        sumWeight += 1;
+      }
+    }
+    if (sumWeight > 0) {
+      totalPlatformRating = (sumScore / sumWeight).toFixed(1);
+    } else {
+      totalPlatformRating = avgRating; // fallback
+    }
+  } else {
+    totalPlatformRating = business?.total_platform_rating 
+      ? Number(business.total_platform_rating).toFixed(1) 
+      : avgRating;
+  }
 
   const responded     = all.filter((r) => r.status === "responded").length;
   const responseRate  = total > 0 ? Math.round((responded / total) * 100) : 0;
@@ -215,12 +243,13 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           <div className="space-y-6">
 
             {/* ── 1. Key metrics ── */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               {[
-                { label: "Total Reviews",    value: total,               suffix: "",  color: "text-white" },
-                { label: "Average Rating",   value: avgRating,           suffix: "★", color: "text-yellow-400" },
+                { label: "Total Reviews",    value: totalPlatformReviews, suffix: "",  color: "text-white" },
+                { label: "Fetched & Analyzed", value: total,             suffix: "",  color: "text-indigo-400" },
+                { label: "Total Rating",   value: totalPlatformRating,           suffix: "★", color: "text-yellow-400" },
+                { label: "Fetched Rating",   value: avgRating,           suffix: "★", color: "text-yellow-400" },
                 { label: "Response Rate",    value: `${responseRate}`,   suffix: "%", color: "text-emerald-400" },
-                { label: "Last 30 Days",     value: last30.length,       suffix: "",  color: "text-indigo-400" },
                 { label: "Needs Attention",  value: needsAttention,      suffix: "",  color: needsAttention > 0 ? "text-red-400" : "text-slate-400" },
               ].map((s) => (
                 <div key={s.label} className="stat-card bg-slate-800/60 border border-slate-700 rounded-xl p-4">

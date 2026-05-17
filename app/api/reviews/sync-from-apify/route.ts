@@ -73,6 +73,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const totalPlatformReviews = items[0]?.reviewsCount || items.length;
+    const totalPlatformRating = items[0]?.totalScore;
+
+    const updateData: any = { total_platform_reviews: totalPlatformReviews };
+    if (totalPlatformRating !== undefined) {
+      updateData.total_platform_rating = totalPlatformRating;
+    }
+
+    // Update business with true total reviews count
+    await supabase
+      .from("businesses")
+      .update(updateData)
+      .eq("id", businessId);
+
     // Transform Apify reviews to our format
     // console.log(items);
     const reviewsToInsert = items.map((item: any) => {

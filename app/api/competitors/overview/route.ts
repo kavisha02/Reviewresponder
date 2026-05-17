@@ -81,8 +81,8 @@ export async function GET(request: Request) {
 
     // Build ranking: [your biz + all competitors] sorted by avgRating DESC, totalReviews DESC
     const allParticipants = [
-      { id: "you", avgRating: userAvgRating, totalReviews: userReviewsArr.length },
-      ...competitorsArr.map((c) => ({ id: c.id, avgRating: c.avg_rating ?? 0, totalReviews: c.total_reviews ?? 0 })),
+      { id: "you", avgRating: business.total_platform_rating || userAvgRating, totalReviews: business.total_platform_reviews || userReviewsArr.length },
+      ...competitorsArr.map((c) => ({ id: c.id, avgRating: c.total_platform_rating || c.avg_rating || 0, totalReviews: c.total_platform_reviews || c.total_reviews || 0 })),
     ];
     allParticipants.sort((a, b) =>
       b.avgRating !== a.avgRating ? b.avgRating - a.avgRating : b.totalReviews - a.totalReviews
@@ -92,8 +92,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       yourBusiness: {
         name: business.name,
-        avgRating: userAvgRating,
+        avgRating: business.total_platform_rating || userAvgRating,
+        fetchedAvgRating: userAvgRating,
         totalReviews: userReviewsArr.length,
+        totalPlatformReviews: business.total_platform_reviews || userReviewsArr.length,
+        totalPlatformRating: business.total_platform_rating || userAvgRating,
         responseRate: userResponseRate,
         positive: userPositive,
         mixed: userMixed,
@@ -104,8 +107,10 @@ export async function GET(request: Request) {
         id: c.id,
         name: c.competitor_name,
         location: c.competitor_location ?? null,
-        avgRating: c.avg_rating ?? 0,
+        avgRating: c.total_platform_rating || c.avg_rating || 0,
+        fetchedAvgRating: c.avg_rating || 0,
         totalReviews: c.total_reviews ?? 0,
+        totalPlatformReviews: c.total_platform_reviews || c.total_reviews || 0,
         responseRate: Math.round(c.response_rate ?? 0),
         positive: c.positive_count ?? 0,
         mixed: c.mixed_count ?? 0,

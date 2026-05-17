@@ -66,13 +66,41 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const allReviews = reviews ?? [];
 
   // ── Stats ─────────────────────────────────────────────────────────────
-  const totalReviews   = allReviews.length;
-  const avgRating      = totalReviews > 0
-    ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
+  const fetchedReviews = allReviews.length;
+  const totalPlatformReviews = isAll 
+    ? businesses.reduce((sum, b) => sum + (b.total_platform_reviews || 0), 0) || fetchedReviews
+    : business?.total_platform_reviews || fetchedReviews;
+
+  const avgRating      = fetchedReviews > 0
+    ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / fetchedReviews).toFixed(1)
     : "—";
+
+  let totalPlatformRating: string | number = "—";
+  if (isAll) {
+    let sumScore = 0;
+    let sumWeight = 0;
+    for (const b of businesses) {
+      if (b.total_platform_rating && b.total_platform_reviews) {
+        sumScore += Number(b.total_platform_rating) * Number(b.total_platform_reviews);
+        sumWeight += Number(b.total_platform_reviews);
+      } else if (b.total_platform_rating) {
+        sumScore += Number(b.total_platform_rating);
+        sumWeight += 1;
+      }
+    }
+    if (sumWeight > 0) {
+      totalPlatformRating = (sumScore / sumWeight).toFixed(1);
+    } else {
+      totalPlatformRating = avgRating; // fallback
+    }
+  } else {
+    totalPlatformRating = business?.total_platform_rating 
+      ? Number(business.total_platform_rating).toFixed(1) 
+      : avgRating;
+  }
   const responded      = allReviews.filter((r) => r.status === "responded").length;
-  const responseRate   = totalReviews > 0
-    ? Math.round((responded / totalReviews) * 100)
+  const responseRate   = fetchedReviews > 0
+    ? Math.round((responded / fetchedReviews) * 100)
     : 0;
   const needsAttention = allReviews.filter((r) => r.status === "new" && r.rating <= 2).length;
 
@@ -95,10 +123,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
 
         {/* ── Stats row ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           {[
-            { label: "Total Reviews",   value: totalReviews,       suffix: "",  color: "text-white" },
-            { label: "Average Rating",  value: avgRating,          suffix: "★", color: "text-yellow-400" },
+            { label: "Total Reviews",   value: totalPlatformReviews, suffix: "",  color: "text-white" },
+            { label: "Fetched & Analyzed", value: fetchedReviews, suffix: "", color: "text-indigo-400" },
+            { label: "Total Rating",  value: totalPlatformRating,          suffix: "★", color: "text-yellow-400" },
+            { label: "Fetched Rating",  value: avgRating,          suffix: "★", color: "text-yellow-400" },
             { label: "Response Rate",   value: `${responseRate}`,  suffix: "%", color: "text-emerald-400" },
             { label: "Needs Attention", value: needsAttention,     suffix: "",  color: needsAttention > 0 ? "text-red-400" : "text-slate-400" },
           ].map((stat) => (
