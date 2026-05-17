@@ -50,12 +50,9 @@ const SECTIONS = [
   { id: "status", label: "Review Status Breakdown", default: true },
   { id: "sentiment", label: "Sentiment Breakdown", default: true },
   { id: "language", label: "Language Distribution", default: true },
-  { id: "summary", label: "AI Location Summary", default: true },
   { id: "category", label: "AI Category Analysis", default: true },
   { id: "insights", label: "AI Actionable Insights", default: true },
-  { id: "sentimentInsights", label: "AI Sentiment Insights", default: true },
   { id: "topReviews", label: "Top Reviews", default: true },
-  { id: "responses", label: "Response Log", default: true },
 ];
 
 export default function ExportReportClient({ reportData }: Props) {
@@ -311,13 +308,6 @@ export default function ExportReportClient({ reportData }: Props) {
             </div>
           )}
 
-          {selectedSections.has("summary") && (reportData.analyses.summary as any) && (
-            <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Location Summary</h2>
-              <p style={{ color: '#374151', whiteSpace: 'pre-wrap', margin: '0' }}>{String(reportData.analyses.summary)}</p>
-            </div>
-          )}
-
           {selectedSections.has("category") && (reportData.analyses.category as any) && (
             <div style={{ marginBottom: '24px', pageBreakInside: 'avoid' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center' }}>AI Category Analysis</h2>
@@ -357,24 +347,6 @@ export default function ExportReportClient({ reportData }: Props) {
             </div>
           )}
 
-          {selectedSections.has("sentimentInsights") && (reportData.analyses.sentiment as any) && (
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>AI Sentiment Insights</h2>
-              <div>
-                {["positive", "mixed", "negative"].map((key) => {
-                  const data = (reportData.analyses.sentiment as any)[key];
-                  if (!data) return null;
-                  return (
-                    <div key={key} style={{ marginBottom: '16px', pageBreakInside: 'avoid' }}>
-                      <h3 style={{ fontWeight: '600', textTransform: 'capitalize', color: '#1f2937', margin: '0 0 8px 0' }}>{key} Feedback:</h3>
-                      <p style={{ padding: '12px', borderRadius: '4px', border: '1px solid #e5e7eb', color: '#374151', backgroundColor: '#f9fafb', margin: '0' }}>{data}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {selectedSections.has("topReviews") && reportData.metrics.topReviews.length > 0 && (
             <div style={{ marginBottom: '24px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>Top Reviews</h2>
@@ -389,32 +361,6 @@ export default function ExportReportClient({ reportData }: Props) {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {selectedSections.has("responses") && reportData.metrics.publishedReviews.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', margin: '0 0 12px 0', paddingBottom: '4px', borderBottom: '1px solid #d1d5db', textAlign: 'center', pageBreakInside: 'avoid' }}>Response Log</h2>
-              <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', tableLayout: 'fixed', pageBreakInside: 'avoid' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#4f46e5', color: '#ffffff', pageBreakInside: 'avoid' }}>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db', width: '25%' }}>Author</th>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db', width: '15%' }}>Rating</th>
-                    <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #d1d5db', width: '60%' }}>Response</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.metrics.publishedReviews.slice(0, 10).map((r, i) => (
-                    <tr key={r.id || i} style={{ backgroundColor: i % 2 !== 0 ? '#f9fafb' : 'transparent', pageBreakInside: 'avoid' }}>
-                      <td style={{ padding: '8px', verticalAlign: 'top', border: '1px solid #d1d5db' }}>{r.author_name || "Anonymous"}</td>
-                      <td style={{ padding: '8px', verticalAlign: 'top', color: '#eab308', border: '1px solid #d1d5db' }}>{"★".repeat(r.rating || 0)}</td>
-                      <td style={{ padding: '8px', verticalAlign: 'top', color: '#374151', fontSize: '12px', whiteSpace: 'pre-wrap', border: '1px solid #d1d5db' }}>
-                        {(r.published_response || "").substring(0, 150)}{r.published_response && r.published_response.length > 150 ? "..." : ""}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           )}
 

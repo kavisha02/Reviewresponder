@@ -73,6 +73,7 @@ export default async function ExportPage({ searchParams }: PageProps) {
   const statusData = [
     { label: "Draft Ready", count: all.filter((r) => r.status === "draft").length },
     { label: "Needs Response", count: all.filter((r) => r.status === "new").length },
+    { label: "Responded", count: all.filter((r) => r.status === "responded").length },
     { label: "Ignored", count: all.filter((r) => r.status === "ignored").length },
   ];
 
