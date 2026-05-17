@@ -366,7 +366,11 @@ export default function HeadToHeadComparison({
               </div>
               <div>
                 <p className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                  High Impact <span title="Local Guides, >50 reviews, or >5 likes">ℹ️</span>
+                  High Impact <span className="text-slate-500 cursor-help normal-case" title="Local Guides, >50 reviews, or >5 likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                  </span>
                 </p>
                 <p className="text-2xl font-bold text-amber-400">{data.yourBusiness.highImpactCount ?? 0}</p>
               </div>
@@ -421,7 +425,11 @@ export default function HeadToHeadComparison({
               </div>
               <div>
                 <p className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                  High Impact <span title="Local Guides, >50 reviews, or >5 likes">ℹ️</span>
+                  High Impact <span className="text-slate-500 cursor-help normal-case" title="Local Guides, >50 reviews, or >5 likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                  </span>
                 </p>
                 <p className="text-2xl font-bold text-amber-400">{data.competitor.highImpactCount ?? 0}</p>
               </div>

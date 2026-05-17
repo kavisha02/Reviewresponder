@@ -215,9 +215,27 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                       <th className="px-4 py-3 text-left">Rank</th>
                       <th className="px-4 py-3 text-left">Name</th>
                       <th className="px-4 py-3 text-right">Total Rating</th>
-                      <th className="px-4 py-3 text-right">Fair Score</th>
+                      <th className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          Fair Score
+                          <span className="text-slate-400 cursor-help" title="Bayesian Average that balances raw star rating with the total number of reviews, preventing businesses with very few reviews from unfairly dominating the leaderboard.">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                            </svg>
+                          </span>
+                        </div>
+                      </th>
                       <th className="px-4 py-3 text-right">Reviews</th>
-                      <th className="px-4 py-3 text-right">High Impact</th>
+                      <th className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          High Impact
+                          <span className="text-slate-400 cursor-help" title="Reviews from Local Guides, users with 50+ reviews, or reviews with 5+ likes. These reviews have a disproportionately large impact on search ranking and public perception.">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                            </svg>
+                          </span>
+                        </div>
+                      </th>
                       <th className="px-4 py-3 text-right">Response Rate</th>
                       <th className="px-4 py-3 text-right">Positive %</th>
                     </tr>
@@ -312,6 +330,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                         values: [yourBusiness.highImpactCount || 0, ...competitors.slice(0, 4).map((c) => c.highImpactCount || 0)],
                         format: (v: number) => String(v),
                         bestFn: (vals: number[]) => Math.max(...vals),
+                        tooltip: "Reviews from Local Guides, users with 50+ reviews, or reviews with 5+ likes. These reviews have a disproportionately large impact on search ranking and public perception."
                       },
                       {
                         label: "Response Rate",
@@ -341,7 +360,16 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                       const best = row.bestFn(row.values);
                       return (
                         <tr key={row.label} className={`border-b border-slate-700/50 ${rowIdx % 2 === 0 ? "" : "bg-slate-900/20"}`}>
-                          <td className="px-4 py-3 text-slate-400 font-medium text-xs uppercase">{row.label}</td>
+                          <td className="px-4 py-3 text-slate-400 font-medium text-xs uppercase flex items-center gap-1">
+                            {row.label}
+                            {row.tooltip && (
+                              <span className="text-slate-500 cursor-help normal-case" title={row.tooltip}>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                                </svg>
+                              </span>
+                            )}
+                          </td>
                           {row.values.map((val, colIdx) => (
                             <td
                               key={colIdx}

@@ -246,7 +246,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             {/* ── 1. Key metrics ── */}
             <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
               {[
-                { label: "High Impact Reviews", value: highImpactCount, suffix: "", color: "text-amber-400" },
+                { label: "High Impact Reviews", value: highImpactCount, suffix: "", color: "text-amber-400", tooltip: "Reviews from Local Guides, users with 50+ reviews, or reviews with 5+ likes. Highly influential." },
                 { label: "Total Reviews",    value: totalPlatformReviews, suffix: "",  color: "text-white" },
                 { label: "Fetched & Analyzed", value: total,             suffix: "",  color: "text-indigo-400" },
                 { label: "Total Rating",   value: totalPlatformRating,           suffix: "★", color: "text-yellow-400" },
@@ -256,7 +256,16 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
               ].map((s) => (
                 <div key={s.label} className="stat-card bg-slate-800/60 border border-slate-700 rounded-xl p-4">
                   <div className={`text-2xl font-bold ${s.color}`}>{s.value}{s.suffix}</div>
-                  <div className="text-slate-400 text-xs mt-1">{s.label}</div>
+                  <div className="text-slate-400 text-xs mt-1 flex items-center gap-1 uppercase tracking-wider font-semibold">
+                    {s.label}
+                    {s.tooltip && (
+                      <span className="text-slate-500 cursor-pointer normal-case" title={s.tooltip}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

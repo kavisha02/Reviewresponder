@@ -126,7 +126,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         {/* ── Stats row ── */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           {[
-            { label: "High Impact Reviews", value: highImpactCount, suffix: "", color: "text-amber-400" },
+            { label: "High Impact Reviews", value: highImpactCount, suffix: "", color: "text-amber-400", tooltip: "Reviews from Local Guides, users with 50+ reviews, or reviews with 5+ likes. Highly influential." },
             { label: "Total Reviews",   value: totalPlatformReviews, suffix: "",  color: "text-white" },
             { label: "Fetched & Analyzed", value: fetchedReviews, suffix: "", color: "text-indigo-400" },
             { label: "Total Rating",  value: totalPlatformRating,          suffix: "★", color: "text-yellow-400" },
@@ -138,7 +138,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               <div className={`text-2xl font-bold ${stat.color}`}>
                 {stat.value}{stat.suffix}
               </div>
-              <div className="text-slate-400 text-xs mt-1">{stat.label}</div>
+              <div className="text-slate-400 text-xs mt-1 uppercase tracking-wider font-semibold flex items-center gap-1">
+                {stat.label}
+                {stat.tooltip && (
+                  <span className="text-slate-500 cursor-pointer normal-case" title={stat.tooltip}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 hover:text-slate-300 transition-colors">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
