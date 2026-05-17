@@ -459,37 +459,33 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
             </section>
 
             {/* ── E. AI RECOMMENDATIONS ── */}
-            {!data.recommendations?.length ? (
+            {!data.recommendations?.length || data.hasNewReviews ? (
               <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h4 className="text-white font-semibold mb-2">🤖 AI Growth Recommendations</h4>
-                    <p className="text-slate-400 text-sm">
-                      Get 4-5 AI-generated insights to outperform all your competitors simultaneously. Based on ratings, reviews, sentiment, and response rates across your entire competitive landscape.
-                    </p>
+                    {data.hasNewReviews ? (
+                      <p className="text-amber-400/90 text-sm">
+                        New reviews have been synced since your last recommendations. Regenerate to get up-to-date insights across your competitive landscape.
+                      </p>
+                    ) : (
+                      <p className="text-slate-400 text-sm">
+                        Get 4-5 AI-generated insights to outperform all your competitors simultaneously. Based on ratings, reviews, sentiment, and response rates across your entire competitive landscape.
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={handleGenerateRecs}
                     disabled={generatingRecs}
                     className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap"
                   >
-                    {generatingRecs ? "Generating..." : "Generate Recommendations"}
+                    {generatingRecs ? "Generating..." : data.hasNewReviews ? "Regenerate Recommendations" : "Generate Recommendations"}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-white">💡 AI Growth Recommendations</h4>
-                  <button
-                    onClick={handleGenerateRecs}
-                    disabled={!data.hasNewReviews || generatingRecs}
-                    title={!data.hasNewReviews ? "Add new reviews to refresh recommendations" : "Refresh recommendations"}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 bg-indigo-700/50 hover:bg-indigo-600/60 text-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {generatingRecs ? "Refreshing..." : "↻ Refresh"}
-                  </button>
-                </div>
+                <h4 className="font-semibold text-white mb-4">💡 AI Growth Recommendations</h4>
                 <ul className="space-y-3">
                   {data.recommendations.map((rec, idx) => (
                     <li key={idx} className="flex gap-3 text-slate-300 text-sm">
