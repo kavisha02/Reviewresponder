@@ -37,6 +37,7 @@ interface YourBusiness {
   positive: number;
   mixed: number;
   negative: number;
+  topTopics: string[];
   rank: number;
 }
 
@@ -356,7 +357,16 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                     })}
                     <tr className="border-b border-slate-700/50 bg-slate-900/20">
                       <td className="px-4 py-3 text-slate-400 font-medium text-xs uppercase">Top Topics</td>
-                      <td className="px-4 py-3 text-center text-slate-500 bg-indigo-950/20 text-xs">—</td>
+                      <td className="px-4 py-3 text-center bg-indigo-950/20">
+                        <div className="flex flex-wrap justify-center gap-1">
+                          {yourBusiness.topTopics?.slice(0, 3).map((t) => (
+                            <span key={t} className="text-xs bg-indigo-900/60 text-indigo-300 px-1.5 py-0.5 rounded">{t}</span>
+                          ))}
+                          {(!yourBusiness.topTopics || yourBusiness.topTopics.length === 0) && (
+                            <span className="text-slate-500 text-xs">Run Deep Analysis to generate</span>
+                          )}
+                        </div>
+                      </td>
                       {competitors.slice(0, 4).map((c) => (
                         <td key={c.id} className="px-4 py-3 text-center">
                           <div className="flex flex-wrap justify-center gap-1">

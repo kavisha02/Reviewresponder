@@ -12,17 +12,19 @@ export async function GET(request: Request) {
     const businessId = searchParams.get("businessId");
     if (!businessId) return NextResponse.json({ error: "businessId is required" }, { status: 400 });
 
-    // Parallel fetch: business, user reviews, competitors, saved recommendations
+    // Parallel fetch: business, user reviews, competitors, saved recommendations, own topic cache
     const [
       { data: business },
       { data: userReviews },
       { data: competitors },
       { data: savedRecs },
+      { data: topicCache },
     ] = await Promise.all([
       supabase.from("businesses").select("*").eq("id", businessId).eq("user_id", user.id).single(),
       supabase.from("reviews").select("rating, status, created_at, is_local_guide, reviewer_review_count, likes_count").eq("business_id", businessId),
       supabase.from("competitor_benchmarks").select("*").eq("business_id", businessId).eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("competitor_multi_recommendations").select("recommendations, generated_at").eq("business_id", businessId).eq("user_id", user.id).single(),
+      supabase.from("analytics_cache").select("results").eq("business_id", businessId).eq("analysis_type", "category").single(),
     ]);
 
     if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
@@ -39,6 +41,16 @@ export async function GET(request: Request) {
     const userMixed = userReviewsArr.filter((r) => r.rating === 3).length;
     const userNegative = userReviewsArr.filter((r) => r.rating <= 2).length;
     const userHighImpact = userReviewsArr.filter((r) => r.is_local_guide || (r.reviewer_review_count && r.reviewer_review_count > 50) || (r.likes_count && r.likes_count > 5)).length;
+
+    const userTopTopics: string[] = (() => {
+      if (!topicCache?.results) return [];
+      const results = topicCache.results as { topics?: Array<{ topic: string; mentions: number }> };
+      if (!Array.isArray(results.topics)) return [];
+      return results.topics
+        .sort((a, b) => (b.mentions || 0) - (a.mentions || 0))
+        .slice(0, 3)
+        .map((t) => t.topic);
+    })();
 
     const competitorsArr = competitors || [];
 
@@ -111,6 +123,7 @@ export async function GET(request: Request) {
         negative: userNegative,
         negative: userNegative,
         highImpactCount: userHighImpact,
+        topTopics: userTopTopics,
         rank: rankMap.get("you") ?? 1,
         fairScore: participantsWithScore.find(p => p.id === "you")?.fairScore ?? userAvgRating,
       },
