@@ -142,6 +142,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const thirtyAgo     = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const last30        = all.filter((r) => r.review_date && new Date(r.review_date) > thirtyAgo);
   const needsAttention = all.filter((r) => r.status === "new" && r.rating <= 2).length;
+  const highImpactCount = all.filter((r) => r.is_local_guide || (r.reviewer_review_count && r.reviewer_review_count > 50) || (r.likes_count && r.likes_count > 5)).length;
 
   // ── 2. Rating distribution ──────────────────────────────────────────────
   const ratingCounts = [5, 4, 3, 2, 1].map((star) => ({
@@ -243,8 +244,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           <div className="space-y-6">
 
             {/* ── 1. Key metrics ── */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
               {[
+                { label: "High Impact Reviews", value: highImpactCount, suffix: "", color: "text-amber-400" },
                 { label: "Total Reviews",    value: totalPlatformReviews, suffix: "",  color: "text-white" },
                 { label: "Fetched & Analyzed", value: total,             suffix: "",  color: "text-indigo-400" },
                 { label: "Total Rating",   value: totalPlatformRating,           suffix: "★", color: "text-yellow-400" },

@@ -185,8 +185,32 @@ export default function ReviewCard({ review, onStatusChange }: { review: Review;
               {initials}
             </div>
             <div>
-              <div className="text-white font-medium text-sm">{review.author_name ?? "Anonymous"}</div>
-              <div className="text-slate-500 text-xs">{formatDate(review.review_date)} · {timeAgo(review.review_date)}</div>
+              <div className="text-white font-medium text-sm flex items-center gap-2">
+                {review.author_name ?? "Anonymous"}
+                {review.is_local_guide && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 font-semibold" title="Local Guide">
+                    ⭐ Local Guide
+                  </span>
+                )}
+                {(review.reviewer_review_count ?? 0) > 50 && !review.is_local_guide && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold" title="Prolific Reviewer">
+                    🌟 VIP Reviewer
+                  </span>
+                )}
+              </div>
+              <div className="text-slate-500 text-xs flex items-center gap-2 mt-0.5">
+                <span>{formatDate(review.review_date)} · {timeAgo(review.review_date)}</span>
+                {review.has_photos && (
+                  <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30" title="Includes Photos">
+                    📸 Photos
+                  </span>
+                )}
+                {(review.likes_count ?? 0) > 0 && (
+                  <span className="text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30" title="Likes">
+                    ❤️ {review.likes_count}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

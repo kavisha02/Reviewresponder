@@ -29,6 +29,10 @@ export interface Review {
   rating: number;
   review_text: string | null;
   review_date: string | null;
+  is_local_guide?: boolean;
+  reviewer_review_count?: number;
+  likes_count?: number;
+  has_photos?: boolean;
   status: "new" | "draft" | "responded" | "ignored";
   draft_response: string | null;
   published_response: string | null;
@@ -57,6 +61,7 @@ export interface CompetitorBenchmark {
   english_count: number;
   hindi_count: number;
   hinglish_count: number;
+  high_impact_count?: number;
   total_platform_reviews?: number;
   total_platform_rating?: number;
   last_synced_at: string | null;
@@ -98,6 +103,10 @@ export interface CompetitorReview {
   review_text: string | null;
   review_date: string | null;
   sentiment: "positive" | "mixed" | "negative" | null;
+  is_local_guide?: boolean;
+  reviewer_review_count?: number;
+  likes_count?: number;
+  has_photos?: boolean;
   topics: string[] | null;
   owner_response: string | null;
   owner_response_date: string | null;

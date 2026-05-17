@@ -121,6 +121,8 @@ export async function GET(
       .sort((a, b) => new Date(b.review_date || 0).getTime() - new Date(a.review_date || 0).getTime())
       .slice(0, 5);
 
+    const userHighImpactCount = userReviewsArray.filter((r) => r.is_local_guide || (r.reviewer_review_count && r.reviewer_review_count > 50) || (r.likes_count && r.likes_count > 5)).length;
+
     // Don't generate insights on page load - user must click button
     // Return previously saved insights if they exist
     const insights: string[] = Array.isArray(competitor.insights) ? competitor.insights : [];
@@ -133,6 +135,7 @@ export async function GET(
         totalReviews: userReviewsArray.length,
         totalPlatformReviews: business.total_platform_reviews || userReviewsArray.length,
         totalPlatformRating: business.total_platform_rating || parseFloat(userAvgRating as string),
+        highImpactCount: userHighImpactCount,
         responseRate: userResponseRate,
         sentimentBreakdown: userSentimentCounts,
         topTopics: userTopTopics,
@@ -152,6 +155,7 @@ export async function GET(
         totalReviews: competitor.total_reviews,
         totalPlatformReviews: competitor.total_platform_reviews || competitor.total_reviews,
         totalPlatformRating: competitor.total_platform_rating || competitor.avg_rating,
+        highImpactCount: competitor.high_impact_count ?? 0,
         responseRate: competitorResponseRate,
         sentimentBreakdown: {
           positive: competitor.positive_count,

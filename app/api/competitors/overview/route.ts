@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       { data: savedRecs },
     ] = await Promise.all([
       supabase.from("businesses").select("*").eq("id", businessId).eq("user_id", user.id).single(),
-      supabase.from("reviews").select("rating, status, created_at").eq("business_id", businessId),
+      supabase.from("reviews").select("rating, status, created_at, is_local_guide, reviewer_review_count, likes_count").eq("business_id", businessId),
       supabase.from("competitor_benchmarks").select("*").eq("business_id", businessId).eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("competitor_multi_recommendations").select("recommendations, generated_at").eq("business_id", businessId).eq("user_id", user.id).single(),
     ]);
@@ -38,6 +38,7 @@ export async function GET(request: Request) {
     const userPositive = userReviewsArr.filter((r) => r.rating >= 4).length;
     const userMixed = userReviewsArr.filter((r) => r.rating === 3).length;
     const userNegative = userReviewsArr.filter((r) => r.rating <= 2).length;
+    const userHighImpact = userReviewsArr.filter((r) => r.is_local_guide || (r.reviewer_review_count && r.reviewer_review_count > 50) || (r.likes_count && r.likes_count > 5)).length;
 
     const competitorsArr = competitors || [];
 
@@ -79,15 +80,22 @@ export async function GET(request: Request) {
       ),
     ]);
 
-    // Build ranking: [your biz + all competitors] sorted by avgRating DESC, totalReviews DESC
+    // Calculate Bayesian Average for fair ranking: (R*v + C*m) / (v + m)
     const allParticipants = [
-      { id: "you", avgRating: business.total_platform_rating || userAvgRating, totalReviews: business.total_platform_reviews || userReviewsArr.length },
-      ...competitorsArr.map((c) => ({ id: c.id, avgRating: c.total_platform_rating || c.avg_rating || 0, totalReviews: c.total_platform_reviews || c.total_reviews || 0 })),
+      { id: "you", avgRating: Number(business.total_platform_rating || userAvgRating), totalReviews: Number(business.total_platform_reviews || userReviewsArr.length) },
+      ...competitorsArr.map((c) => ({ id: c.id, avgRating: Number(c.total_platform_rating || c.avg_rating || 0), totalReviews: Number(c.total_platform_reviews || c.total_reviews || 0) })),
     ];
-    allParticipants.sort((a, b) =>
-      b.avgRating !== a.avgRating ? b.avgRating - a.avgRating : b.totalReviews - a.totalReviews
-    );
-    const rankMap = new Map(allParticipants.map((p, i) => [p.id, i + 1]));
+    
+    const m = allParticipants.reduce((sum, p) => sum + p.totalReviews, 0) / (allParticipants.length || 1);
+    const C = allParticipants.reduce((sum, p) => sum + p.avgRating, 0) / (allParticipants.length || 1);
+
+    const participantsWithScore = allParticipants.map(p => ({
+      ...p,
+      fairScore: (p.avgRating * p.totalReviews + C * m) / (p.totalReviews + m) || 0
+    }));
+
+    participantsWithScore.sort((a, b) => b.fairScore - a.fairScore);
+    const rankMap = new Map(participantsWithScore.map((p, i) => [p.id, i + 1]));
 
     return NextResponse.json({
       yourBusiness: {
@@ -101,7 +109,10 @@ export async function GET(request: Request) {
         positive: userPositive,
         mixed: userMixed,
         negative: userNegative,
+        negative: userNegative,
+        highImpactCount: userHighImpact,
         rank: rankMap.get("you") ?? 1,
+        fairScore: participantsWithScore.find(p => p.id === "you")?.fairScore ?? userAvgRating,
       },
       competitors: competitorsArr.map((c, i) => ({
         id: c.id,
@@ -122,7 +133,9 @@ export async function GET(request: Request) {
           totalReviews: s.total_reviews ?? 0,
           avgRating: s.avg_rating ?? null,
         })),
+        highImpactCount: c.high_impact_count ?? 0,
         rank: rankMap.get(c.id) ?? i + 2,
+        fairScore: participantsWithScore.find(p => p.id === c.id)?.fairScore ?? (c.total_platform_rating || c.avg_rating || 0),
       })),
       recommendations: Array.isArray(savedRecs?.recommendations) ? savedRecs.recommendations : [],
       hasNewReviews,

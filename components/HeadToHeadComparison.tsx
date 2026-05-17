@@ -10,6 +10,7 @@ interface HeadToHeadData {
     totalReviews: number;
     totalPlatformReviews: number;
     totalPlatformRating?: number;
+    highImpactCount?: number;
     responseRate: number;
     sentimentBreakdown: { positive: number; mixed: number; negative: number };
     topTopics: string[];
@@ -29,6 +30,7 @@ interface HeadToHeadData {
     totalReviews: number | null;
     totalPlatformReviews: number | null;
     totalPlatformRating?: number | null;
+    highImpactCount?: number;
     responseRate: number | null;
     sentimentBreakdown: { positive: number; mixed: number; negative: number };
     topTopics: Array<{ topic: string; mentions: number; sentiment: number | null }>;
@@ -357,9 +359,17 @@ export default function HeadToHeadComparison({
             </div>
 
             {/* Response Rate */}
-            <div>
-              <p className="text-slate-400 text-sm mb-1">Response Rate</p>
-              <p className="text-2xl font-bold text-emerald-400">{data.yourBusiness.responseRate}%</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-slate-400 text-sm mb-1">Response Rate</p>
+                <p className="text-2xl font-bold text-emerald-400">{data.yourBusiness.responseRate}%</p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 flex items-center gap-1">
+                  High Impact <span title="Local Guides, >50 reviews, or >5 likes">ℹ️</span>
+                </p>
+                <p className="text-2xl font-bold text-amber-400">{data.yourBusiness.highImpactCount ?? 0}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -402,11 +412,19 @@ export default function HeadToHeadComparison({
             </div>
 
             {/* Response Rate */}
-            <div>
-              <p className="text-slate-400 text-sm mb-1">Response Rate</p>
-              <p className="text-2xl font-bold text-slate-400">
-                {data.competitor.responseRate != null ? `${data.competitor.responseRate}%` : "N/A"}
-              </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-slate-400 text-sm mb-1">Response Rate</p>
+                <p className="text-2xl font-bold text-slate-400">
+                  {data.competitor.responseRate != null ? `${data.competitor.responseRate}%` : "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-400 text-sm mb-1 flex items-center gap-1">
+                  High Impact <span title="Local Guides, >50 reviews, or >5 likes">ℹ️</span>
+                </p>
+                <p className="text-2xl font-bold text-amber-400">{data.competitor.highImpactCount ?? 0}</p>
+              </div>
             </div>
           </div>
         </div>

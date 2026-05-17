@@ -241,11 +241,16 @@ export async function POST(
     const totalPlatformReviews = apifyReviews?.[0]?.reviewsCount || allReviewsArray.length;
     const totalPlatformRating = apifyReviews?.[0]?.totalScore;
     
+    const highImpactCount = allReviewsArray.filter(
+      (r) => r.is_local_guide || (r.reviewer_review_count && r.reviewer_review_count > 50) || (r.likes_count && r.likes_count > 5)
+    ).length;
+    
     const updateData: any = {
       total_reviews: allReviewsArray.length,
       positive_count: sentimentCounts.positive,
       mixed_count: sentimentCounts.mixed,
       negative_count: sentimentCounts.negative,
+      high_impact_count: highImpactCount,
       response_rate: responseRate,
       last_synced_at: new Date().toISOString(),
       total_platform_reviews: totalPlatformReviews,

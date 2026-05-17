@@ -205,7 +205,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
             <section className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700">
                 <h2 className="text-lg font-semibold text-white">Leaderboard</h2>
-                <p className="text-slate-400 text-sm">Ranked by average rating, then total reviews</p>
+                <p className="text-slate-400 text-sm">Ranked by Bayesian Average (balancing rating & review volume)</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -214,8 +214,9 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                       <th className="px-4 py-3 text-left">Rank</th>
                       <th className="px-4 py-3 text-left">Name</th>
                       <th className="px-4 py-3 text-right">Total Rating</th>
-                      <th className="px-4 py-3 text-right">Fetched Rating</th>
+                      <th className="px-4 py-3 text-right">Fair Score</th>
                       <th className="px-4 py-3 text-right">Reviews</th>
+                      <th className="px-4 py-3 text-right">High Impact</th>
                       <th className="px-4 py-3 text-right">Response Rate</th>
                       <th className="px-4 py-3 text-right">Positive %</th>
                     </tr>
@@ -243,13 +244,16 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                           <td className={`px-4 py-3 text-right ${p.avgRating === bestRating ? "text-emerald-400" : "text-slate-300"}`}>
                             {p.avgRating > 0 ? `${p.avgRating.toFixed(1)} ★` : "N/A"}
                           </td>
-                          <td className="px-4 py-3 text-right text-slate-300">
-                            {p.fetchedAvgRating ? `${p.fetchedAvgRating.toFixed(1)} ★` : "N/A"}
+                          <td className="px-4 py-3 text-right text-slate-300 font-semibold" title="Bayesian Average">
+                            {p.fairScore ? p.fairScore.toFixed(2) : "N/A"}
                           </td>
                           <td className={`px-4 py-3 text-right ${(p.totalPlatformReviews || p.totalReviews) === bestReviews ? "text-emerald-400 font-semibold" : "text-slate-300"}`}>
                             {p.totalPlatformReviews || p.totalReviews}
                           </td>
-                          <td className={`px-4 py-3 text-right ${p.responseRate === bestResponse ? "text-emerald-400 font-semibold" : "text-slate-300"}`}>
+                          <td className="px-4 py-3 text-right text-amber-400 font-medium">
+                            {p.highImpactCount ?? 0}
+                          </td>
+                          <td className={`px-4 py-3 text-right ${p.responseRate === bestResponse ? "text-emerald-400" : "text-slate-300"}`}>
                             {p.responseRate}%
                           </td>
                           <td className="px-4 py-3 text-right text-slate-300">{positivePct}%</td>
@@ -261,7 +265,6 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
               </div>
             </section>
 
-            {/* ── B. SIDE-BY-SIDE METRICS ── */}
             <section className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700">
                 <h2 className="text-lg font-semibold text-white">Side-by-Side Comparison</h2>
@@ -292,14 +295,20 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                         bestFn: (vals: number[]) => Math.max(...vals),
                       },
                       {
-                        label: "Fetched Rating",
-                        values: [yourBusiness.fetchedAvgRating || 0, ...competitors.slice(0, 4).map((c) => c.fetchedAvgRating || 0)],
-                        format: (v: number) => v > 0 ? `${v.toFixed(1)} ★` : "N/A",
+                        label: "Fair Score",
+                        values: [yourBusiness.fairScore || 0, ...competitors.slice(0, 4).map((c) => c.fairScore || 0)],
+                        format: (v: number) => v > 0 ? v.toFixed(2) : "N/A",
                         bestFn: (vals: number[]) => Math.max(...vals),
                       },
                       {
                         label: "Total Reviews",
                         values: [yourBusiness.totalPlatformReviews || yourBusiness.totalReviews, ...competitors.slice(0, 4).map((c) => c.totalPlatformReviews || c.totalReviews)],
+                        format: (v: number) => String(v),
+                        bestFn: (vals: number[]) => Math.max(...vals),
+                      },
+                      {
+                        label: "High Impact Reviews",
+                        values: [yourBusiness.highImpactCount || 0, ...competitors.slice(0, 4).map((c) => c.highImpactCount || 0)],
                         format: (v: number) => String(v),
                         bestFn: (vals: number[]) => Math.max(...vals),
                       },
@@ -319,13 +328,13 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                         label: "Mixed",
                         values: [yourBusiness.mixed, ...competitors.slice(0, 4).map((c) => c.mixed)],
                         format: (v: number) => String(v),
-                        bestFn: () => -Infinity, // no "best" for mixed
+                        bestFn: () => -Infinity,
                       },
                       {
                         label: "Negative",
                         values: [yourBusiness.negative, ...competitors.slice(0, 4).map((c) => c.negative)],
                         format: (v: number) => String(v),
-                        bestFn: (vals: number[]) => Math.min(...vals), // lowest negative is best
+                        bestFn: (vals: number[]) => Math.min(...vals),
                       },
                     ].map((row, rowIdx) => {
                       const best = row.bestFn(row.values);
@@ -337,7 +346,7 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                               key={colIdx}
                               className={`px-4 py-3 text-center font-semibold ${
                                 colIdx === 0 ? "bg-indigo-950/20" : ""
-                              } ${val === best && best !== -Infinity ? "text-emerald-400" : "text-slate-300"}`}
+                              } ${row.label === "High Impact Reviews" ? "text-amber-400" : val === best && best !== -Infinity ? "text-emerald-400" : "text-slate-300"}`}
                             >
                               {row.format(val)}
                             </td>

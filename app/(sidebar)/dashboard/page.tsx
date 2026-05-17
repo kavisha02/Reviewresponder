@@ -103,6 +103,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     ? Math.round((responded / fetchedReviews) * 100)
     : 0;
   const needsAttention = allReviews.filter((r) => r.status === "new" && r.rating <= 2).length;
+  const highImpactCount = allReviews.filter((r) => r.is_local_guide || (r.reviewer_review_count && r.reviewer_review_count > 50) || (r.likes_count && r.likes_count > 5)).length;
 
   return (
     <main className="text-slate-100">
@@ -123,8 +124,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
 
         {/* ── Stats row ── */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           {[
+            { label: "High Impact Reviews", value: highImpactCount, suffix: "", color: "text-amber-400" },
             { label: "Total Reviews",   value: totalPlatformReviews, suffix: "",  color: "text-white" },
             { label: "Fetched & Analyzed", value: fetchedReviews, suffix: "", color: "text-indigo-400" },
             { label: "Total Rating",  value: totalPlatformRating,          suffix: "★", color: "text-yellow-400" },
