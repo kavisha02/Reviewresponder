@@ -385,26 +385,11 @@ export default function SetupPage() {
                           : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                       }`}
                     />
-                    {googleMapsUrl.trim() && !urlValid && (
-                      <button
-                        type="button"
-                        onClick={validateGoogleMapsUrl}
-                        disabled={urlValidating}
-                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
-                      >
-                        {urlValidating ? "Verifying..." : "Verify"}
-                      </button>
-                    )}
                   </div>
 
-                  {urlValidationMsg && (
-                    <p className={`text-xs mt-2 ${urlValid ? "text-emerald-400" : "text-red-400"}`}>
-                      {urlValidationMsg}
-                    </p>
-                  )}
-
                   <p className="text-xs text-slate-500 mt-2">
-                    Paste the URL from your Google Maps business listing to fetch reviews automatically.
+                    Paste the URL from your Google Maps business listing to fetch reviews automatically.<br />
+                    For example: <span className="text-slate-400">https://maps.app.goo.gl/xxxx</span>
                   </p>
                 </div>
 
@@ -488,26 +473,11 @@ export default function SetupPage() {
                           : "border-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                       }`}
                     />
-                    {googleMapsUrl.trim() && !urlValid && (
-                      <button
-                        type="button"
-                        onClick={validateGoogleMapsUrl}
-                        disabled={urlValidating}
-                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap"
-                      >
-                        {urlValidating ? "Verifying..." : "Verify"}
-                      </button>
-                    )}
                   </div>
 
-                  {urlValidationMsg && (
-                    <p className={`text-xs mt-2 ${urlValid ? "text-emerald-400" : "text-red-400"}`}>
-                      {urlValidationMsg}
-                    </p>
-                  )}
-
                   <p className="text-xs text-slate-500 mt-2">
-                    You can edit this URL if needed.
+                    Paste the URL from your Google Maps business listing to fetch reviews automatically.<br />
+                    For example: <span className="text-slate-400">https://maps.app.goo.gl/xxxx</span>
                   </p>
                 </div>
 
