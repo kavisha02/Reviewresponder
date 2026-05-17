@@ -276,9 +276,9 @@ export default function MultiCompetitorDashboard({ businessId }: { businessId: s
                         <div className="text-indigo-500 text-xs">You</div>
                       </th>
                       {competitors.slice(0, 4).map((c) => (
-                        <th key={c.id} className="px-4 py-3 text-center">
-                          <div className="text-white font-medium truncate max-w-[120px]">{c.name}</div>
-                          {c.location && <div className="text-slate-500 text-xs truncate max-w-[120px]">{c.location}</div>}
+                        <th key={c.id} className="px-4 py-3 text-center min-w-[120px]">
+                          <div className="text-white font-medium break-words">{c.name}</div>
+                          {c.location && <div className="text-slate-500 text-xs break-words">{c.location}</div>}
                         </th>
                       ))}
                     </tr>
